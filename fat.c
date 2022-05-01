@@ -4,6 +4,7 @@
 #include <stdio.h>         // printf()
 //#include <stdlib.h>        // u_int8_t
 #include <byteswap.h>
+#include <ctype.h>
 #include <linux/types.h>
 #include <string.h>  // for strcmp() method
 #include <sys/mman.h>// stat()
@@ -12,7 +13,7 @@
 
 // declare the constants
 int data_start_sector;
-
+const unsigned long content_length_per_line = 16;
 #define RESERVED_SECTOR_COUNT 32
 #define SECTOR_SIZE 512  // determined as such in last paragraph of page 1
 #define CLUSTER_SIZE 1024// determined as such in the first line of page 2
@@ -30,7 +31,7 @@ unsigned long int disk_size_in_bytes;
 int main(int argc, char **argv)
 {
     printf("%s : %d\n", argv[0], argc);
-    pln("new line huh");
+
     if (argc < 2) {
         pln("Not enough argument is provided. fat -h");
     }
@@ -45,8 +46,16 @@ int main(int argc, char **argv)
         pln("print info");
         print_v(argv[1]);
     }
+    else if( strcmp(argv[2], "-s") == 0) {
+        // char* num_end_ptr =argv[3];
+        // while( *num_end_ptr != NULL){
+        //     pln(num_end_ptr);
+        // }
+        printf("print sector %d of disk %s\n",atoi( argv[3]), argv[1]);
+        print_s(argv[1], atoi(argv[3])); //strtol( argv[3], num_end_ptr, 10 ));
+    }
 
-    pln("Tmp");
+    pln("after if elses of the command flags!");
     return 0;
 }
 
@@ -150,6 +159,51 @@ void print_v(char *disk_image)
 }
 
 /**
+ * fat DISKIMAGE -s SECTORNUM: print the content (byte sequence) of
+ * the specified sector to screen in hex form. An example output is shown
+ * below. Use the same format. Each line of output will have a sequence of
+ * 16 bytes of the sector printed out in hex form. First, in a line, the offset of
+ * the first byte in the sequence is printed in hex form (using 8 hex digits).
+ * Then, the sequence of 16 bytes are printed out in hex form (between 2 hex
+ * digits we have a SPACE character). Then the same sequence of 16 bytes
+ * are also printed out with printable characters if possible. For that you will
+ * use the isprint() function. If for a character isprint() returns true,
+ * then you will print the character using %c format specifier in printf().
+ * If the character (byte) is not printable, i.e., isprint() returns false, then
+ * you print the character ‘.’ (dot) instead of the byte, again using the %c
+ * format specifier in printf().
+ *
+ * Command: ./fat disk1 -s 0
+ * @param disk_image
+ * @param sectorNum "the specified sector"s index
+ */
+void print_s(char *disk_image, int sectorNum){
+
+    int file = open(disk_image, O_RDONLY);
+    if (file == -1)
+    {
+        printf("Error opening file for the fat's -s flag.\n");
+        return; // terminate the method
+    }
+
+    // read file
+    unsigned char buf[SECTOR_SIZE];
+    if( readsector(file, buf,sectorNum) != 0) {
+        printf("Error reading %dth sector in the file for the fat's -s flag.\n", sectorNum);
+    }
+    else{
+
+        off_t offset;
+        offset = sectorNum * SECTOR_SIZE;
+        for(int i = 0; i < SECTOR_SIZE; i = i + (int)content_length_per_line) {
+            print_content(&buf[i], offset + i);
+        }
+    }
+
+    // close file
+    close(file);
+}
+/**
  * @brief Convert the unsigned long to char array
  * in binary form
  *
@@ -174,7 +228,7 @@ void word_to_binary(unsigned long int num, char *binary)
 int readsector(int fd, unsigned char *buf, unsigned int snum)
 {
     off_t offset;
-    int n;
+    long n;
     offset = snum * SECTOR_SIZE;
     lseek(fd, offset, SEEK_SET);
     n = read(fd, buf, SECTOR_SIZE);
@@ -223,4 +277,20 @@ unsigned long int u8_to_ul(__u8 *arr, int length)
 void pln(char *input)
 {
     printf("%s\n", input);
+}
+/**
+ *
+ * @param content exactly "16" char length of content
+ * @param offset
+ */
+void print_content(u_char *content, unsigned long offset)
+{
+    printf("%.8lx ", offset);
+    for(int i = 0; i < content_length_per_line; i++){
+        printf("%.2x ", content[i]);
+    }
+    for(int i = 0; i < content_length_per_line; i++){
+        printf("%c", isprint( content[i]) ? content[i] : '.');
+    }
+    putc('\n', stdout);
 }

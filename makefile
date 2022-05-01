@@ -16,7 +16,7 @@ v:
 s:
 	./fat disk1 -s 32
 c:
-	./fat disk1 -c 2
+	./fat disk1 -c 2 # equivalent to combining sector 2064 & 2065
 t:
 	./fat disk1 -t
 r:
