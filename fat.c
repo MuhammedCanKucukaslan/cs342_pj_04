@@ -5,7 +5,7 @@
 #include <sys/mman.h> // stat()
 #include <unistd.h>   // and read()
 #include <linux/msdos_fs.h> // fat_boot_sector and msdos_dir_entry
-
+#include "fat.h"
 // declare the constants
 int data_start_sector;
 
@@ -14,9 +14,6 @@ int data_start_sector;
 #define CLUSTER_SIZE 1024 // determined as such in the first line of page 2
 #define MEGA_TO 1048576 // 1024*1024
 
-int readsector(int fd, unsigned char *buf, unsigned int snum);  // given in assignment
-int readcluster(int fd, unsigned char *buf, unsigned int cnum); // given in assignment
-unsigned long int u8_to_ul(__u8* arr, int length);
 
 // global variable declaration
 struct fat_boot_sector *fbs;
@@ -26,11 +23,7 @@ unsigned int root_start_cluster;
 unsigned long int disk_size_in_bytes;
 
 
-// method declaration
-void pln(char *input);
-void print_v(char *disk_image);
-void word_to_binary(unsigned long int num, char *binary);
-void init(char* disk_image_path);
+
 
 int main(int argc, char **argv)
 {
