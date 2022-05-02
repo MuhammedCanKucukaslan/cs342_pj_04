@@ -81,6 +81,7 @@ void init(char *disk_image_path)
     root_start_cluster = fbs->fat32.root_cluster;
     data_start_sector = RESERVED_SECTOR_COUNT + num_fats * sectors_per_fat;
     disk_size_in_bytes = num_sectors * SECTOR_SIZE;
+    close(file);
 }
 
 /*
