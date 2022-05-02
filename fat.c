@@ -10,7 +10,6 @@
 #include <sys/mman.h>// stat()
 #include <unistd.h>  // and read()
 
-
 // declare the constants
 int data_start_sector;
 const unsigned long content_length_per_line = 16;
@@ -19,6 +18,10 @@ const unsigned long content_length_per_line = 16;
 #define CLUSTER_SIZE 1024// determined as such in the first line of page 2
 #define MEGA_TO 1048576  // 1024*1024
 
+const char directory_seperator = '/';
+const int type_volume = 8;
+const int type_directory = 16;
+const int type_file = 32;
 
 // global variable declaration
 struct fat_boot_sector *fbs;
@@ -51,6 +54,39 @@ int main(int argc, char **argv)
     } else if (strcmp(argv[2], "-c") == 0) {
         printf("print cluster %d of disk %s\n", atoi(argv[3]), argv[1]);
         print_c(argv[1], atoi(argv[3]));//strtol( argv[3], num_end_ptr, 10 ));
+    } else if (strcmp(argv[2], "-t") == 0) {
+        printf("print -t %d of disk %s\n", atoi(argv[3]), argv[1]);
+        // print_t(argv[3]);
+    } else if (strcmp(argv[2], "-r") == 0) {
+        printf("print -r %d of disk %s\n", atoi(argv[3]), argv[1]);
+        // print_r(argv[3]);
+    } else if (strcmp(argv[2], "-b") == 0) {
+        printf("print -b %d of disk %s\n", atoi(argv[3]), argv[1]);
+        //print_b(argv[1], argv[3]);
+    } else if (strcmp(argv[2], "-a") == 0) {
+        printf("print -a %d of disk %s\n", atoi(argv[3]), argv[1]);
+        print_a(argv[1], argv[3]);
+    } else if (strcmp(argv[2], "-n") == 0) {
+        printf("print -n %d of disk %s\n", atoi(argv[3]), argv[1]);
+        // print_n(argv[3]);
+    } else if (strcmp(argv[2], "-m") == 0) {
+        printf("print -m %d of disk %s\n", atoi(argv[3]), argv[1]);
+        // print_m(argv[3]);
+    } else if (strcmp(argv[2], "-f") == 0) {
+        printf("print -f %d of disk %s\n", atoi(argv[3]), argv[1]);
+        // print_f(argv[3]);
+    } else if (strcmp(argv[2], "-d") == 0) {
+        printf("print -d %d of disk %s\n", atoi(argv[3]), argv[1]);
+        // print_d(argv[3]);
+    } else if (strcmp(argv[2], "-l") == 0) {
+        printf("print -l %d of disk %s\n", atoi(argv[3]), argv[1]);
+        // print_l(argv[3]);
+    } else if (strcmp(argv[2], "-l") == 0) {
+        printf("print -l %d of disk %s\n", atoi(argv[3]), argv[1]);
+        // print_l(argv[3]);
+    } else if (strcmp(argv[2], "-h") == 0) {
+        printf("print -h %d of disk %s\n", atoi(argv[3]), argv[1]);
+        // print_h(argv[3]);
     }
 
     pln("after if elses of the command flags!");
@@ -119,20 +155,6 @@ void print_v(char *disk_image)
     printf("Disk size in Megabytes: %lu MB\n", (disk_size_in_bytes / MEGA_TO));
     printf("Number of used clusters: %d\n", todo);// todo calculate
     printf("Number of free clusters: %d\n", todo);// todo calculate
-    // open file in raw and read
-    /*
-    int file = open(disk_image, O_RDONLY);
-    if (file == -1)
-    {
-        pln("Error opening file");
-    }
-    // read file
-    char buffer[9];
-    read(file, buffer, 8);
-    buffer[8] = '\0';
-    // close file
-    close(file);
-     */
 }
 /*
  * fat DISKIMAGE -s SECTORNUM: print the content (byte sequence) of
@@ -173,6 +195,7 @@ void print_c(char *disk_image, int clusterNum)
         printf("The cluster number should be greater or equal to 2 but was %d\n", clusterNum);
         return;
     }
+    // open file
     int file = open(disk_image, O_RDONLY);
     if (file == -1) {
         printf("Error opening file for the fat's -s flag.\n");
@@ -271,6 +294,7 @@ void pln(char *input)
 {
     printf("%s\n", input);
 }
+
 /**
  *
  * @param content exactly "16" char length of content

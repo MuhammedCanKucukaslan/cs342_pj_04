@@ -11,35 +11,34 @@ tar:
 run: all
 	./fat disk1 -v
 	make clean 
-v:
+v: fat
 	./fat disk1 -v
-s:
+s: fat
 	./fat disk1 -s 32
-c:
+c: fat
 	./fat disk1 -c 2 # equivalent to combining sector 2064 & 2065
-t:
+t: fat
 	./fat disk1 -t
-r:
+r: fat
 	./fat disk1 -r /DIR2/F1.TXT 100 64
-b:
+b: fat
 	./fat disk1 -b /DIR2/F1.TXT
-a:
+a: fat
 	./fat disk1 -a /DIR2/F1.TXT
-n:
+n: fat
 	./fat disk1 -n /DIR1/AFILE1.BIN
-m:
+m: fat
 	./fat disk1 -m 100
-f:
+f: fat
 	./fat disk1 -f 50
-d:
+d: fat
 	./fat disk1 -d /DIR1/AFILE1.BIN
-l:
+l: fat
 	./fat disk1 -l /
-l2:
+l2: fat
 	./fat disk1 -l /DIR2
-h:
+h: fat
 	./fat disk1 -h
-
 val: all
 	valgrind -s --leak-check=full --show-leak-kinds=all --leak-resolution=high --track-origins=yes --vgdb=yes ./fat disk1 -v
 hel: all

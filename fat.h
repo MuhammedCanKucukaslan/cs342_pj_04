@@ -71,6 +71,33 @@ void print_s(char *disk_image, int sectorNum);
  */
 void print_c(char *disk_image, int clusterNum);
 
+/**
+ * fat DISKIMAGE -a PATH: print the content of the ascii text file
+ * indicated with PATH to the screen as it is. You can assume the specified
+ * file contains printable ascii text characters. Where each line will end will
+ * be dictated by the newline characters that may exist in the specified file.
+ * Hence you will not worry about the line length. Just print the characters
+ * (by using the %c format specifier) as they appear in the file. An example
+ * output is below, which is the content of the file /DIR2/F1.TXT. We will
+ * invoke this option only for ascii text files.
+ * Command: ./fat disk1 -a /DIR2/F1.TXT
+ * @param disk_image
+ * @param path
+ */
+void print_a(char *disk_image, /*unsigned*/ char *path);
+
+/**
+ * fat DISKIMAGE -b PATH: print the content (byte sequence) of the file
+ * indicated with PATH to the screen in hex form in the following format. The
+ * file can be a binary file or an ascii file, does not matter. An example output
+ * is shown below. Use the same format. It is the output for the file
+ * /DIR2/F1.TXT (a portion of it).
+ * Command: ./fat disk1 -b /DIR2/F1.TXT
+ * @param disk_image
+ * @param path
+ */
+void print_b(char *disk_image, /*u_*/char *path);
+
 
 void word_to_binary(unsigned long int num, char *binary);
 void init(char *disk_image_path);
@@ -80,4 +107,5 @@ int readcluster(int fd, unsigned char *buf, unsigned int cnum);// given in assig
 unsigned long int u8_to_ul(__u8 *arr, int length);
 void print_content(u_char *content, unsigned long int offset);
 
+struct msdos_dir_entry * get_dentry(char* disk_image,  char* entry) ;
 #endif
