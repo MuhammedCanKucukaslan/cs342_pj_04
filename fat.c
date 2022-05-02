@@ -45,14 +45,12 @@ int main(int argc, char **argv)
     if (strcmp(argv[2], "-v") == 0) {
         pln("print info");
         print_v(argv[1]);
-    }
-    else if( strcmp(argv[2], "-s") == 0) {
-        // char* num_end_ptr =argv[3];
-        // while( *num_end_ptr != NULL){
-        //     pln(num_end_ptr);
-        // }
-        printf("print sector %d of disk %s\n",atoi( argv[3]), argv[1]);
-        print_s(argv[1], atoi(argv[3])); //strtol( argv[3], num_end_ptr, 10 ));
+    } else if (strcmp(argv[2], "-s") == 0) {
+        printf("print sector %d of disk %s\n", atoi(argv[3]), argv[1]);
+        print_s(argv[1], atoi(argv[3]));//strtol( argv[3], num_end_ptr, 10 ));
+    } else if (strcmp(argv[2], "-c") == 0) {
+        printf("print cluster %d of disk %s\n", atoi(argv[3]), argv[1]);
+        print_c(argv[1], atoi(argv[3]));//strtol( argv[3], num_end_ptr, 10 ));
     }
 
     pln("after if elses of the command flags!");
@@ -85,31 +83,9 @@ void init(char *disk_image_path)
     disk_size_in_bytes = num_sectors * SECTOR_SIZE;
 }
 
-/**
+/*
  * @brief  fat DISKIMAGE -v: print some summary information about the
- * specified FAT32 volume DISKIMAGE. Most of the information is obtained
- * from the boot sector (sector #0). An example output is given below (use
- * the same format and parameters). Command: ./fat disk1 -v
- * @param disk_image
- *
- * @example output can be
- * File system type: FAT32
- * Volume label: CS342
- * Number of sectors in disk: 262144
- * Sector size in bytes: 512
- * Number of reserved sectors: 32
- * Number of sectors per FAT table: 1016
- * Number of FAT tables: 2
- * Number of sectors per cluster: 2
- * Number of clusters = 130048
- * Data region starts at sector: 2064
- * Root directory starts at sector: 2064
- * Root directory starts at cluster: 2
- * Disk size in bytes: 134217728 bytes
- * Disk size in Megabytes: 128 MB
- * Number of used clusters: 142
- * Number of free clusters: 129906
- *
+ * specified FAT32 volume DISKIMAGE.
  */
 void print_v(char *disk_image)
 {
@@ -157,45 +133,61 @@ void print_v(char *disk_image)
     close(file);
      */
 }
-
-/**
+/*
  * fat DISKIMAGE -s SECTORNUM: print the content (byte sequence) of
- * the specified sector to screen in hex form. An example output is shown
- * below. Use the same format. Each line of output will have a sequence of
- * 16 bytes of the sector printed out in hex form. First, in a line, the offset of
- * the first byte in the sequence is printed in hex form (using 8 hex digits).
- * Then, the sequence of 16 bytes are printed out in hex form (between 2 hex
- * digits we have a SPACE character). Then the same sequence of 16 bytes
- * are also printed out with printable characters if possible. For that you will
- * use the isprint() function. If for a character isprint() returns true,
- * then you will print the character using %c format specifier in printf().
- * If the character (byte) is not printable, i.e., isprint() returns false, then
- * you print the character ‘.’ (dot) instead of the byte, again using the %c
- * format specifier in printf().
- *
- * Command: ./fat disk1 -s 0
- * @param disk_image
- * @param sectorNum "the specified sector"s index
+* the specified sector to screen in hex form.
  */
-void print_s(char *disk_image, int sectorNum){
-
+void print_s(char *disk_image, int sectorNum)
+{
+    if (sectorNum < 0) {
+        printf("The sector number must be non negative but was %d\n", sectorNum);
+        return;
+    }
     int file = open(disk_image, O_RDONLY);
-    if (file == -1)
-    {
+    if (file == -1) {
         printf("Error opening file for the fat's -s flag.\n");
-        return; // terminate the method
+        return;// terminate the method
     }
 
     // read file
     unsigned char buf[SECTOR_SIZE];
-    if( readsector(file, buf,sectorNum) != 0) {
+    if (readsector(file, buf, sectorNum) != 0) {
         printf("Error reading %dth sector in the file for the fat's -s flag.\n", sectorNum);
-    }
-    else{
-
+    } else {
         off_t offset;
         offset = sectorNum * SECTOR_SIZE;
-        for(int i = 0; i < SECTOR_SIZE; i = i + (int)content_length_per_line) {
+        for (int i = 0; i < SECTOR_SIZE; i = i + (int) content_length_per_line) {
+            print_content(&buf[i], offset + i);
+        }
+    }
+
+    // close file
+    close(file);
+}
+
+
+void print_c(char *disk_image, int clusterNum)
+{
+    if (clusterNum < 2) {
+        printf("The cluster number should be greater or equal to 2 but was %d\n", clusterNum);
+        return;
+    }
+    int file = open(disk_image, O_RDONLY);
+    if (file == -1) {
+        printf("Error opening file for the fat's -s flag.\n");
+        return;// terminate the method
+    }
+
+    // read file
+    unsigned char buf[CLUSTER_SIZE];
+    if (readcluster(file, buf, clusterNum) != 0) {
+        printf("Error reading %dth cluster in the file for the fat's -s flag.\n", clusterNum);
+    } else {
+        off_t offset;
+        unsigned int snum;// sector number
+        snum = data_start_sector + (clusterNum - 2) * sectors_per_cluster;
+        offset = snum * SECTOR_SIZE;
+        for (int i = 0; i < CLUSTER_SIZE; i = i + (int) content_length_per_line) {
             print_content(&buf[i], offset + i);
         }
     }
@@ -286,11 +278,11 @@ void pln(char *input)
 void print_content(u_char *content, unsigned long offset)
 {
     printf("%.8lx ", offset);
-    for(int i = 0; i < content_length_per_line; i++){
+    for (int i = 0; i < content_length_per_line; i++) {
         printf("%.2x ", content[i]);
     }
-    for(int i = 0; i < content_length_per_line; i++){
-        printf("%c", isprint( content[i]) ? content[i] : '.');
+    for (int i = 0; i < content_length_per_line; i++) {
+        printf("%c", isprint(content[i]) ? content[i] : '.');
     }
     putc('\n', stdout);
 }
