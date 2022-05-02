@@ -16,7 +16,7 @@ v:
 s:
 	./fat disk1 -s 32
 c:
-	./fat disk1 -c 2
+	./fat disk1 -c 2 # equivalent to combining sector 2064 & 2065
 t:
 	./fat disk1 -t
 r:
@@ -41,6 +41,6 @@ h:
 	./fat disk1 -h
 
 val: all
-	valgrind -s --leak-check=full --show-leak-kinds=all --leak-resolution=high --track-origins=yes --vgdb=yes ./app
+	valgrind -s --leak-check=full --show-leak-kinds=all --leak-resolution=high --track-origins=yes --vgdb=yes ./fat disk1 -v
 hel: all
-	valgrind --tool=helgrind ./app
+	valgrind --tool=helgrind ./fat disk1 -v
