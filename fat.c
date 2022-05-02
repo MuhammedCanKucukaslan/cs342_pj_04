@@ -219,6 +219,18 @@ void print_c(char *disk_image, int clusterNum)
     // close file
     close(file);
 }
+
+
+void print_a(char *disk_image, char *path)
+{
+
+    // read file
+    toUpperCase(path);
+    // todo check if the file exists
+    struct msdos_dir_entry * dirEntry = get_dentry(disk_image, path);
+
+}
+
 /**
  * @brief Convert the unsigned long to char array
  * in binary form
@@ -311,6 +323,63 @@ void print_content(u_char *content, unsigned long offset)
     }
     putc('\n', stdout);
 }
+
+struct msdos_dir_entry *get_dentry(char *disk_image, char *path)
+{
+    // open file
+    int file = open(disk_image, O_RDONLY);
+    if (file == -1) {
+        printf("Error opening file for the fat's -s flag.\n");
+        return NULL;// terminate the method
+    }
+    struct msdos_dir_entry *dep;// dir entry pointer
+    // read file
+    // todo check if the file exists
+    unsigned char buf[CLUSTER_SIZE];
+    if (readcluster(file, buf, 2) != 0) {// todo a real implementation
+        printf("Error reading %dth cluster in the file for the fat's -a flag.\n", 0);
+        return NULL;
+    } else {
+        dep = (struct msdos_dir_entry *) (buf);
+        // if( strlen(path) == 1) {
+        //     return   (struct msdos_dir_entry *) path;
+        // }// then we evilishly assume //, directory_seperator))
+        int i = 0;
+        /*
+         * A directory entry that starts with byte value 0xe5 is
+         * empty, i.e., is available (was used earlier and then deleted). It can be used for
+         * a new file that is created. An entry that starts with byte value 0x00 is also an
+         * unused entry.
+         */
+        int isFound = /*false*/ 1 == 0;
+        char current_entry[11];
+        //while(-1 != findUntilNext(current_entry, path, directory_seperator)) {
+            while (dep[i].name[0] != 0 && !isFound) {
+                if (dep[i].name[0] == 229 /* 0xe5 */) {
+                    printf("An empty d_entry when i=%d\n", i);
+                } else {
+                    // so outer while ensures that we are still in a directory
+                    printf(dep[i].attr == type_volume      ? "Volume    : "
+                           : dep[i].attr == type_directory ? "Directory: "
+                                                           : "File    : ");
+                    char n[9], ext[4];
+                    trim_split_filename((char *) dep[i].name, n, ext);
+                    printf("%s%c%s\n", n, dep[i].attr == type_file ? '.' : '\0', ext);
+                }
+                i++;
+            }
+        //}
+        // pln(dep->attr);
+        // pln(dep->date);
+        // pln(dep->time);
+        // pln(dep->size);
+    }
+
+    // close file
+    close(file);
+    return (struct msdos_dir_entry *) path;
+}
+
 void trim_split_filename(const char *full_8_3_filename, char *filename, char *extension)
 {
     int name_length = 8;
