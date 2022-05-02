@@ -108,4 +108,6 @@ unsigned long int u8_to_ul(__u8 *arr, int length);
 void print_content(u_char *content, unsigned long int offset);
 
 struct msdos_dir_entry * get_dentry(char* disk_image,  char* entry) ;
+void trim_split_filename(const char * full_8_3_filename, char* filename, char* extension);
+void toUpperCase(char* str);
 #endif

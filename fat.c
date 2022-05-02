@@ -311,3 +311,32 @@ void print_content(u_char *content, unsigned long offset)
     }
     putc('\n', stdout);
 }
+void trim_split_filename(const char *full_8_3_filename, char *filename, char *extension)
+{
+    int name_length = 8;
+    // copy the extension name
+    memcpy(extension, &full_8_3_filename[name_length], 3);
+    //printf("#%s#\n",extension);
+    //extension[3] = '\0';
+    //printf("#%s#\n",extension);
+    // trim file name and copy
+    int start = 0;
+    int end = name_length - 1;
+    while (full_8_3_filename[start] == ' ') {
+        start++;
+    }
+    while (full_8_3_filename[end] == ' ') {
+        end = end - 1;
+    }
+    memcpy(filename, &full_8_3_filename[start], end - start+1);
+    filename[1+end - start] = '\0';
+}
+
+void toUpperCase(char *str)
+{
+    for(u_long i = strlen(str); i>0; i--){
+        if( *str > 'a' && *str <= 'z'){
+            *str = (char) toupper( *str);
+        }
+    }
+}
