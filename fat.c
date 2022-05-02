@@ -340,3 +340,22 @@ void toUpperCase(char *str)
         }
     }
 }
+
+/*
+ * It UPDATES the str to remaining part of the string if delimiter is found!
+ * return -1 if it does not contain the delimiter
+ * return the first index if found
+ */
+int findUntilNext( char *result, char *str, char delimiter)
+{
+    int i = 0;
+    u_long length = strlen(str);
+    while( str[i] != delimiter || i < length ){ i++; }
+    memcpy(result, str, 1 + i);
+    if( str[i] == delimiter){
+        memcpy(str, &str[i+1] /*don't include the delimiter*/, length-i-1 < 0 ? 0 : length-i-1);
+        return i;
+    }
+    return -1;
+
+}
