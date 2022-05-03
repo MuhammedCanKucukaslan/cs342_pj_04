@@ -14,7 +14,7 @@ run: all
 v: fat
 	./fat disk1 -v
 s: fat
-	./fat disk1 -s 32
+	./fat disk1 -s 32 # have a look at to 2126 too
 c: fat
 	./fat disk1 -c 2 # equivalent to combining sector 2064 & 2065
 t: fat

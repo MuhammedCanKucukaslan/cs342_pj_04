@@ -111,4 +111,9 @@ struct msdos_dir_entry * get_dentry(char* disk_image,  char* entry) ;
 void trim_split_filename(const char * full_8_3_filename, char* filename, char* extension);
 void toUpperCase(char* str);
 int findUntilNext( char *result, char* str, char delimiter);
+/**
+ * return -1 on failure
+ * retrun 1 on succes
+ */
+int get_dentry_helper(int file_handle, struct msdos_dir_entry * result, struct msdos_dir_entry * cur_dentry,   char* remaining_path) ;
 #endif

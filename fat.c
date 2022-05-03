@@ -332,7 +332,7 @@ struct msdos_dir_entry *get_dentry(char *disk_image, char *path)
         printf("Error opening file for the fat's -s flag.\n");
         return NULL;// terminate the method
     }
-    struct msdos_dir_entry *dep;// dir entry pointer
+    struct msdos_dir_entry *dep, tmp;// dir entry pointer
     // read file
     // todo check if the file exists
     unsigned char buf[CLUSTER_SIZE];
@@ -352,8 +352,8 @@ struct msdos_dir_entry *get_dentry(char *disk_image, char *path)
          * unused entry.
          */
         int isFound = /*false*/ 1 == 0;
-        char current_entry[11];
-        //while(-1 != findUntilNext(current_entry, path, directory_seperator)) {
+        //char current_entry[11];
+        // if (-1 != findUntilNext(current_entry, path, directory_seperator)) {
             while (dep[i].name[0] != 0 && !isFound) {
                 if (dep[i].name[0] == 229 /* 0xe5 */) {
                     printf("An empty d_entry when i=%d\n", i);
@@ -368,13 +368,11 @@ struct msdos_dir_entry *get_dentry(char *disk_image, char *path)
                 }
                 i++;
             }
-        //}
-        // pln(dep->attr);
-        // pln(dep->date);
-        // pln(dep->time);
-        // pln(dep->size);
     }
 
+    get_dentry_helper(file, &tmp, dep, "DIR1" );
+    get_dentry_helper(file, &tmp, dep, "FILE2.BIN" );
+    get_dentry_helper(file, &tmp, dep, "FILE5.TXT" );
     // close file
     close(file);
     return (struct msdos_dir_entry *) path;
@@ -419,7 +417,7 @@ int findUntilNext( char *result, char *str, char delimiter)
 {
     int i = 0;
     u_long length = strlen(str);
-    while( str[i] != delimiter || i < length ){ i++; }
+    while( str[i] != delimiter && i < length ){ i++; }
     memcpy(result, str, 1 + i);
     if( str[i] == delimiter){
         memcpy(str, &str[i+1] /*don't include the delimiter*/, length-i-1 < 0 ? 0 : length-i-1);
@@ -427,4 +425,71 @@ int findUntilNext( char *result, char *str, char delimiter)
     }
     return -1;
 
+}
+
+/*
+ * return -1 on failure
+ * retrun 1 on success
+ */
+int get_dentry_helper(int file_handle, struct msdos_dir_entry *result, struct msdos_dir_entry *cur_dentry,
+                      char *remaining_path)
+{
+    if( cur_dentry == NULL){
+        printf("Cur_dentry was null, impossible!\n");
+    }
+    u_long rp_len = strlen(remaining_path);
+    if( rp_len < 1){
+        result = cur_dentry;
+
+    } else {
+        // check if remaining_part is the "the entry"
+        char search_entry_name[12]; // 11 would be sufficient for 8.3 filenames but nevertheless better to be sorry than safe
+        search_entry_name[11] = '\0';
+        struct msdos_dir_entry *dep;// dir entry pointer
+        if( -1 == findUntilNext(search_entry_name, remaining_path  ,directory_seperator)){
+            // remaining_path is the entry
+            int dir_cluster_no = root_start_cluster;
+            if(cur_dentry->attr != type_volume) { // if it is the root it starts from cluster 2 but corresponding attributes are 0!
+                dir_cluster_no = cur_dentry->start + (cur_dentry->starthi << 16);
+            }
+            unsigned char buf[CLUSTER_SIZE];
+
+            readcluster(file_handle, buf,dir_cluster_no);
+            dep = (struct msdos_dir_entry *) (buf);
+
+            int i = 0;
+            /*
+             * A directory entry that starts with byte value 0xe5 is
+             * empty, i.e., is available (was used earlier and then deleted). It can be used for
+             * a new file that is created. An entry that starts with byte value 0x00 is also an
+             * unused entry.
+             */
+            while (dep[i].name[0] != 0) {
+                if (dep[i].name[0] == 229 /* 0xe5 */) {
+                    printf("Yet another emptied d_entry when i=%d\n", i);
+                } else {
+                    // if the current dep belong to a dir or volume check the name
+                    char dep_sname[12] = "\0";
+                    char n[9], ext[4];
+                    trim_split_filename((char *) dep[i].name, n, ext);
+                    strcat(dep_sname, n);
+                    // if(dep[i].attr == type_volume  ||  dep[i].attr == type_directory )
+                    if( dep[i].attr == type_file) {
+                        strcat(dep_sname, ".");
+                        strcat(dep_sname, ext);
+                    }
+                    if(strcmp(dep_sname, search_entry_name) == 0) {
+                        printf("Found the match!\n");
+                        printf("dep_sname:%s: search_entry_name:%s: \n", dep_sname,search_entry_name);
+                        result = &dep[i];
+                        return 1;
+                    }
+                    // printf("%s%c%s\ndep_sname:%s: search_entry_name:%s: ", n, dep[i].attr == type_file ? '.' : '\0', ext,dep_sname,search_entry_name);
+
+                }
+                i++;
+            }
+        }
+    }
+    return -1;
 }
