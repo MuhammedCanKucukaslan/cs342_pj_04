@@ -134,5 +134,6 @@ int findUntilNext(char *result, char *str, char delimiter);
  */
 int get_dentry_helper(int file_handle, struct msdos_dir_entry *result, struct msdos_dir_entry *cur_dentry,
                       char *remaining_path);
-void print_d_helper(struct msdos_dir_entry *result);
+void print_d_helper(int fd, struct msdos_dir_entry *dep);
+unsigned int readFAT(int file, u_int cnum);
 #endif

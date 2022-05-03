@@ -26,14 +26,14 @@ const int type_file = 32;
 // global variable declaration
 struct fat_boot_sector *fbs;
 unsigned char num_fats, sectors_per_cluster;
-unsigned int num_sectors, sectors_per_fat;
+unsigned int num_sectors, sectors_per_fat, fat_start_sector;
 unsigned int root_start_cluster;
 unsigned long int disk_size_in_bytes;
 
 
 int main(int argc, char **argv)
 {
-    printf("%s : %d\n", argv[0], argc);
+    //printf("%s : %d\n", argv[0], argc);
 
     if (argc < 2) {
         pln("Not enough argument is provided. fat -h");
@@ -49,47 +49,47 @@ int main(int argc, char **argv)
         pln("print info");
         print_v(argv[1]);
     } else if (strcmp(argv[2], "-s") == 0) {
-        printf("print sector %d of disk %s\n", atoi(argv[3]), argv[1]);
+        // printf("print -s sector %d of disk %s\n", atoi(argv[3]), argv[1]);
         print_s(argv[1], atoi(argv[3]));//strtol( argv[3], num_end_ptr, 10 ));
     } else if (strcmp(argv[2], "-c") == 0) {
-        printf("print cluster %d of disk %s\n", atoi(argv[3]), argv[1]);
+        // printf("print -c cluster %d of disk %s\n", atoi(argv[3]), argv[1]);
         print_c(argv[1], atoi(argv[3]));//strtol( argv[3], num_end_ptr, 10 ));
     } else if (strcmp(argv[2], "-t") == 0) {
-        printf("print -t %d of disk %s\n", atoi(argv[3]), argv[1]);
+        // printf("print -t %d of disk %s\n", atoi(argv[3]), argv[1]);
         // print_t(argv[3]);
     } else if (strcmp(argv[2], "-r") == 0) {
-        printf("print -r %d of disk %s\n", atoi(argv[3]), argv[1]);
+        // printf("print -r %d of disk %s\n", atoi(argv[3]), argv[1]);
         // print_r(argv[3]);
     } else if (strcmp(argv[2], "-b") == 0) {
-        printf("print -b %d of disk %s\n", atoi(argv[3]), argv[1]);
+        // printf("print -b %d of disk %s\n", atoi(argv[3]), argv[1]);
         //print_b(argv[1], argv[3]);
     } else if (strcmp(argv[2], "-a") == 0) {
-        printf("print -a %d of disk %s\n", atoi(argv[3]), argv[1]);
+        // printf("print -a %d of disk %s\n", atoi(argv[3]), argv[1]);
         print_a(argv[1], argv[3]);
     } else if (strcmp(argv[2], "-n") == 0) {
-        printf("print -n %d of disk %s\n", atoi(argv[3]), argv[1]);
+        // printf("print -n %d of disk %s\n", atoi(argv[3]), argv[1]);
         // print_n(argv[3]);
     } else if (strcmp(argv[2], "-m") == 0) {
-        printf("print -m %d of disk %s\n", atoi(argv[3]), argv[1]);
+        // printf("print -m %d of disk %s\n", atoi(argv[3]), argv[1]);
         // print_m(argv[3]);
     } else if (strcmp(argv[2], "-f") == 0) {
-        printf("print -f %d of disk %s\n", atoi(argv[3]), argv[1]);
+        // printf("print -f %d of disk %s\n", atoi(argv[3]), argv[1]);
         // print_f(argv[3]);
     } else if (strcmp(argv[2], "-d") == 0) {
-        printf("print -d %d of disk %s\n", atoi(argv[3]), argv[1]);
-        // print_d(argv[3]);
+        // printf("print -d %d of disk %s\n", atoi(argv[3]), argv[1]);
+        print_d(argv[1], argv[3]);
     } else if (strcmp(argv[2], "-l") == 0) {
-        printf("print -l %d of disk %s\n", atoi(argv[3]), argv[1]);
+        // printf("print -l %d of disk %s\n", atoi(argv[3]), argv[1]);
         // print_l(argv[3]);
     } else if (strcmp(argv[2], "-l") == 0) {
-        printf("print -l %d of disk %s\n", atoi(argv[3]), argv[1]);
+        // printf("print -l %d of disk %s\n", atoi(argv[3]), argv[1]);
         // print_l(argv[3]);
     } else if (strcmp(argv[2], "-h") == 0) {
-        printf("print -h %d of disk %s\n", atoi(argv[3]), argv[1]);
+        // printf("print -h %d of disk %s\n", atoi(argv[3]), argv[1]);
         // print_h(argv[3]);
     }
 
-    pln("after if elses of the command flags!");
+    // pln("after if elses of the command flags!");
     return 0;
 }
 
@@ -112,6 +112,7 @@ void init(char *disk_image_path)
     // access the related data from the sector
     sectors_per_cluster = fbs->sec_per_clus;
     num_sectors = fbs->total_sect;
+    fat_start_sector = RESERVED_SECTOR_COUNT;
     num_fats = fbs->fats;
     sectors_per_fat = fbs->fat32.length;
     root_start_cluster = fbs->fat32.root_cluster;
@@ -139,7 +140,7 @@ void print_v(char *disk_image)
     label[11] = '\0';
 
     printf("File system type: %s\n", type);// == NULL ? "FAT32" : "FAT16");
-    printf("Volume label: %s\n", label);   //TODO
+    printf("Volume label: %s\n", label);
     printf("Number of sectors in disk: %d\n", num_sectors);
     printf("Sector size in bytes: %lu\n", u8_to_ul(fbs->sector_size, 2));
     printf("Number of reserved sectors: %d\n", fbs->reserved);
@@ -168,7 +169,7 @@ void print_s(char *disk_image, int sectorNum)
     }
     int file = open(disk_image, O_RDONLY);
     if (file == -1) {
-        printf("Error opening  disk %s for the fat's -s flag.\n",disk_image);
+        printf("Error opening  disk %s for the fat's -s flag.\n", disk_image);
         return;// terminate the method
     }
 
@@ -223,46 +224,69 @@ void print_c(char *disk_image, int clusterNum)
 
 void print_a(char *disk_image, char *path)
 {
-
     toUpperCase(path);
-    pln(path);
-    // todo check if the file exists
+    // pln(path);
+
     struct msdos_dir_entry dirEntry;
 
-    if(-1 == get_dentry(disk_image, path, &dirEntry)){
+    if (-1 == get_dentry(disk_image, path, &dirEntry)) {
         printf("The file \"%s\" could not be found!", path);
-    }
-    else{
-        print_d_helper(&dirEntry);
-
+    } else {
         int fd = open(disk_image, O_RDONLY);
         if (fd == -1) {
             printf("Error opening disk %s for the fat's -a flag.\n", disk_image);
             return;// terminate the method
         }
-        pln("Start writing the file content!");
-        pln("----------------------------");
+        // print_d_helper(fd, &dirEntry);
+
+       // pln("Start writing the file content!");
+       // pln("----------------------------");
         long int rem_size = dirEntry.size;
-        int cur_clu_no = dirEntry.start + (dirEntry.starthi << 16);
+        u_int cur_clu_no = dirEntry.start + (dirEntry.starthi << 16);
         u_char buf[CLUSTER_SIZE];
-        while(rem_size > 0){
+        while (rem_size > 0) {
+            /*
+             * A FAT table entry that is equal or bigger than
+             * 0x0FFFFFF8 indicates the end of a cluster chain (end of file) (EOC or EOF),
+             * for a file or directory. The value 0x0FFFFFF7 is bad cluster mark.
+             */
+            if (cur_clu_no >= 0x0FFFFFF7) {
+                printf("\nEnd of the cluster, or bad cluster: %#x.\n", cur_clu_no);
+                break;
+            }
             readcluster(fd, buf, cur_clu_no);
-            if( rem_size < CLUSTER_SIZE) {
+            if (rem_size < CLUSTER_SIZE) {
                 buf[rem_size] = '\0';
                 rem_size = 0;
-            }
-            else{
+            } else {
                 rem_size = rem_size - CLUSTER_SIZE;
-                // TODO DETERMINE NEXT CLUSTER
-                cur_clu_no = cur_clu_no + 1; // todo it is utterly wrong
+                cur_clu_no = readFAT(fd, cur_clu_no);
             }
             printf("%s", buf);
         }
-        pln("----------------------------");
-
+        // pln("----------------------------");
+        close(fd);
     }
 }
 
+
+void print_d(char *disk_image, char *path)
+{
+    toUpperCase(path);
+    struct msdos_dir_entry dirEntry;
+    if (-1 == get_dentry(disk_image, path, &dirEntry)) {
+        printf("The file \"%s\" could not be found!", path);
+    } else {
+        int fd = open(disk_image, O_RDONLY);
+        if (fd == -1) {
+            printf("Error opening disk %s for the fat's -a flag.\n", disk_image);
+            return;// terminate the method
+        }
+        print_d_helper(fd, &dirEntry);
+        close(fd);
+    }
+}
+// ############################################################################
 /**
  * @brief Convert the unsigned long to char array
  * in binary form
@@ -356,7 +380,7 @@ void print_content(u_char *content, unsigned long offset)
     putc('\n', stdout);
 }
 
-int get_dentry(char *disk_image, char *path, struct msdos_dir_entry* result)
+int get_dentry(char *disk_image, char *path, struct msdos_dir_entry *result)
 {
     // open file
     int file = open(disk_image, O_RDONLY);
@@ -365,14 +389,14 @@ int get_dentry(char *disk_image, char *path, struct msdos_dir_entry* result)
         return -1;// terminate the method
     }
     // eliminate root directory indicator "/"
-    path = path[0] == '/' ? &path[1] : path;
-    printf("PATH passed to get_dentry: #%s#\n", path);
+    path = path[0] == directory_seperator ? &path[1] : path;
+    // printf("PATH passed to get_dentry: #%s#\n", path);
     struct msdos_dir_entry *dep;// dir entry pointer
     // read file
-    // todo check if the file exists
+    // get the root directory's entry
     unsigned char buf[CLUSTER_SIZE];
-    if (readcluster(file, buf, 2) != 0) {// todo a real implementation
-        printf("Error reading %dth cluster in the file for the fat's -a flag.\n", 0);
+    if (readcluster(file, buf, 2) != 0) {
+        printf("Error reading 2nd cluster in the file for the fat's -a flag.\n");
         return -1;
     }
     dep = (struct msdos_dir_entry *) (buf);
@@ -410,7 +434,7 @@ int get_dentry_helper(int file_handle, struct msdos_dir_entry *result, struct ms
         // pln("---------------------");
         // pln(remaining_path);
         // remaining_path is the entry
-        int dir_cluster_no = root_start_cluster;// todo how do I know this?, by magic?
+        int dir_cluster_no = root_start_cluster;
         if (cur_dentry->attr !=
             type_volume) {// if it is the root it starts from cluster 2 but corresponding attributes are 0!
             dir_cluster_no = cur_dentry->start + (cur_dentry->starthi << 16);
@@ -429,7 +453,7 @@ int get_dentry_helper(int file_handle, struct msdos_dir_entry *result, struct ms
              */
         while (dep[i].name[0] != 0) {
             if (dep[i].name[0] == 229 /* 0xe5 */) {
-                printf("Yet another emptied d_entry when i=%d\n", i);
+                // printf("Yet another emptied d_entry when i=%d\n", i);
             } else {
                 // if the current dep belong to a dir or volume check the name
                 char dep_sname[12] = "\0";
@@ -442,8 +466,8 @@ int get_dentry_helper(int file_handle, struct msdos_dir_entry *result, struct ms
                     strcat(dep_sname, ext);
                 }
                 if (strcmp(dep_sname, search_entry_name) == 0) {
-                    printf("\nFound the match!\n");
-                    printf("dep_sname:%s: search_entry_name:%s: \n", dep_sname, search_entry_name);
+                   // printf("\nFound the match!\n");
+                   // printf("dep_sname:%s: search_entry_name:%s: \n", dep_sname, search_entry_name);
                     memcpy(cur_dentry, &dep[i], sizeof(struct msdos_dir_entry));
                     // print_d_helper(cur_dentry);
                     // print_d_helper(&dep[i]);
@@ -526,7 +550,7 @@ int findUntilNext(char *result, char *str, char delimiter)
     return -1;
 }
 
-void print_d_helper(struct msdos_dir_entry *dep)
+void print_d_helper(int fd, struct msdos_dir_entry *dep)
 {
     // NAME SHOULD NOT TAKE THIS LONG
     char dep_sname[12] = "\0";
@@ -542,10 +566,46 @@ void print_d_helper(struct msdos_dir_entry *dep)
     printf("type = %s\n", dep->attr == type_volume      ? "VOLUME"
                           : dep->attr == type_directory ? "DIRECTORY"
                           : dep->attr == type_file      ? "FILE"
-                                                        : "UNKNOWN");     //FILE
-    printf("firstcluster = %d\n", dep->start + (dep->starthi << 16));//7
-    printf("clustercount = %d\n", -1);                               // todo 10
-    printf("size(bytes) = %d\n", dep->size);                         // = 10240
-    printf("date = %#x\n", dep->date);                               //09-04-2022
-    printf("time = %#xd\n", dep->time);                              //10:00
+                                                        : "UNKNOWN");//FILE
+    u_int fc = dep->start + (dep->starthi << 16);
+    printf("firstcluster = %d\n", fc);//7
+    int cc = 0;
+    /**
+     * equal or bigger than 0x0FFFFFF8 indicates the end of a cluster chain (end of file) (EOC or EOF),
+     * for a file or directory. The value 0x0FFFFFF7 is bad cluster mark.
+     */
+    if (fc != 0) {
+        while (fc < 0x0FFFFFF7) {
+            fc = readFAT(fd, fc);
+            cc++;
+        };
+    }
+    printf("clustercount = %d\n", cc);      // 10
+    printf("size(bytes) = %d\n", dep->size);// = 10240
+
+    // refer to https://formats.kaitai.io/dos_datetime/
+    int day, month, year, /*secs,*/ mins, hours;
+    day = dep->date & 31;
+    month = ((dep->date >> 5) - 1) & 15;
+    year = dep->date >> 9;
+    //secs = (dep->time & 31) * 2;
+    mins = ((dep->time >> 5) & 63);
+    hours = (dep->time >> 11);
+    /* days since 1.1.70 plus 80's leap day */
+    printf("date = %.2d-%.2d-%.4d\n", day, month, year + 1980);//09-04-2022
+    printf("time = %.2d:%.2d\n", hours, mins);                 //10:00
+}
+unsigned int readFAT(int file, u_int cnum)
+{
+    // find the sector & the offset
+    u_int snum =
+            fat_start_sector +
+            (cnum /
+             (SECTOR_SIZE /
+              4 /*each one takes 4 bytes*/));// since we expect nonnegative input it is safe to use ‘truncation toward zero’
+    u_int offset = (cnum % (SECTOR_SIZE / 4));
+    u_char buf[SECTOR_SIZE];
+    readsector(file, buf, snum);
+
+    return ((u_int *) buf)[offset];
 }
