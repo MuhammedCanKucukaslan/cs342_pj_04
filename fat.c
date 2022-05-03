@@ -62,7 +62,7 @@ int main(int argc, char **argv)
         // print_r(argv[3]);
     } else if (strcmp(argv[2], "-b") == 0) {
         // printf("print -b %d of disk %s\n", atoi(argv[3]), argv[1]);
-        //print_b(argv[1], argv[3]);
+        print_b(argv[1], argv[3]);
     } else if (strcmp(argv[2], "-a") == 0) {
         // printf("print -a %d of disk %s\n", atoi(argv[3]), argv[1]);
         print_a(argv[1], argv[3]);
@@ -147,8 +147,8 @@ void print_v(char *disk_image)
     printf("Number of sectors per FAT table: %d\n", fbs->fat32.length);
     printf("Number of FAT tables: %u\n", fbs->fats);
     printf("Number of sectors per cluster: %d\n", fbs->sec_per_clus);
-    printf("Number of clusters = %d\n", (fbs->total_sect - (RESERVED_SECTOR_COUNT + num_fats * sectors_per_fat)) /
-                                                fbs->sec_per_clus);// TODO doesn't match the example
+    printf("Number of clusters = %d\n", -1); //(fbs->total_sect - (RESERVED_SECTOR_COUNT + num_fats * sectors_per_fat)) /
+                                                // fbs->sec_per_clus);// TODO doesn't match the example
     printf("Data region starts at sector: %d\n", data_start_sector);
     printf("Root directory starts at sector: %d\n", data_start_sector);
     printf("Root directory starts at cluster: %d\n", root_start_cluster);
@@ -263,6 +263,68 @@ void print_a(char *disk_image, char *path)
                 cur_clu_no = readFAT(fd, cur_clu_no);
             }
             printf("%s", buf);
+        }
+        // pln("----------------------------");
+        close(fd);
+    }
+}
+
+
+
+void print_b(char *disk_image, char *path)
+{
+    toUpperCase(path);
+    // pln(path);
+
+    struct msdos_dir_entry dirEntry;
+
+    if (-1 == get_dentry(disk_image, path, &dirEntry)) {
+        printf("The file \"%s\" could not be found!", path);
+    } else {
+        int fd = open(disk_image, O_RDONLY);
+        if (fd == -1) {
+            printf("Error opening disk %s for the fat's -a flag.\n", disk_image);
+            return;// terminate the method
+        }
+        // print_d_helper(fd, &dirEntry);
+
+        // pln("Start writing the file content!");
+        // pln("----------------------------");
+        off_t address;
+        unsigned int snum;// sector number
+        u_char content[content_length_per_line + 1] ;
+
+        long int rem_size = dirEntry.size;
+        u_int cur_clu_no = dirEntry.start + (dirEntry.starthi << 16);
+        u_char buf[CLUSTER_SIZE];
+        while (rem_size > 0) {
+            int offset = 0;
+            /*
+             * A FAT table entry that is equal or bigger than
+             * 0x0FFFFFF8 indicates the end of a cluster chain (end of file) (EOC or EOF),
+             * for a file or directory. The value 0x0FFFFFF7 is bad cluster mark.
+             */
+            if (cur_clu_no >= 0x0FFFFFF7) {
+                printf("\nEnd of the cluster, or bad cluster: %#x.\n", cur_clu_no);
+                break;
+            }
+            readcluster(fd, buf, cur_clu_no);
+            if (rem_size < CLUSTER_SIZE) {
+                buf[rem_size] = '\0';
+                rem_size = 0;
+            } else {
+                rem_size = rem_size - CLUSTER_SIZE;
+                cur_clu_no = readFAT(fd, cur_clu_no);
+            }
+
+            snum = data_start_sector + (cur_clu_no - 2) * sectors_per_cluster;
+            address = snum * SECTOR_SIZE;
+            while(offset * content_length_per_line < CLUSTER_SIZE) {
+                memcpy(content, &buf[offset * content_length_per_line], content_length_per_line);
+                content[content_length_per_line] = '\0';
+                print_content(content, address + offset * content_length_per_line );
+                offset++;
+            }
         }
         // pln("----------------------------");
         close(fd);
