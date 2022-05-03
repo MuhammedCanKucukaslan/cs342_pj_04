@@ -496,8 +496,8 @@ void trim_split_filename(const char *full_8_3_filename, char *filename, char *ex
 void toUpperCase(char *str)
 {
     for (u_long i = strlen(str); i > 0; i--) {
-        if (*str > 'a' && *str <= 'z') {
-            *str = (char) toupper(*str);
+        if (str[i] > 'a' && str[i] <= 'z') {
+            str[i] = (char) toupper(str[i]);
         }
     }
 }
