@@ -101,7 +101,7 @@ void init(char *disk_image_path)
 {
     int file = open(disk_image_path, O_RDONLY);
     if (file == -1) {
-        pln("Error opening file");
+        pln("Error opening  disk");
     }
     // read file
     u_int8_t sector[SECTOR_SIZE];
@@ -168,7 +168,7 @@ void print_s(char *disk_image, int sectorNum)
     }
     int file = open(disk_image, O_RDONLY);
     if (file == -1) {
-        printf("Error opening file for the fat's -s flag.\n");
+        printf("Error opening  disk %s for the fat's -s flag.\n",disk_image);
         return;// terminate the method
     }
 
@@ -198,7 +198,7 @@ void print_c(char *disk_image, int clusterNum)
     // open file
     int file = open(disk_image, O_RDONLY);
     if (file == -1) {
-        printf("Error opening file for the fat's -s flag.\n");
+        printf("Error opening  disk %s for the fat's -c flag.\n", disk_image);
         return;// terminate the method
     }
 
@@ -223,10 +223,44 @@ void print_c(char *disk_image, int clusterNum)
 
 void print_a(char *disk_image, char *path)
 {
-    // read file
+
     toUpperCase(path);
+    pln(path);
     // todo check if the file exists
-    struct msdos_dir_entry *dirEntry = get_dentry(disk_image, path);
+    struct msdos_dir_entry dirEntry;
+
+    if(-1 == get_dentry(disk_image, path, &dirEntry)){
+        printf("The file \"%s\" could not be found!", path);
+    }
+    else{
+        print_d_helper(&dirEntry);
+
+        int fd = open(disk_image, O_RDONLY);
+        if (fd == -1) {
+            printf("Error opening disk %s for the fat's -a flag.\n", disk_image);
+            return;// terminate the method
+        }
+        pln("Start writing the file content!");
+        pln("----------------------------");
+        long int rem_size = dirEntry.size;
+        int cur_clu_no = dirEntry.start + (dirEntry.starthi << 16);
+        u_char buf[CLUSTER_SIZE];
+        while(rem_size > 0){
+            readcluster(fd, buf, cur_clu_no);
+            if( rem_size < CLUSTER_SIZE) {
+                buf[rem_size] = '\0';
+                rem_size = 0;
+            }
+            else{
+                rem_size = rem_size - CLUSTER_SIZE;
+                // TODO DETERMINE NEXT CLUSTER
+                cur_clu_no = cur_clu_no + 1; // todo it is utterly wrong
+            }
+            printf("%s", buf);
+        }
+        pln("----------------------------");
+
+    }
 }
 
 /**
@@ -322,30 +356,30 @@ void print_content(u_char *content, unsigned long offset)
     putc('\n', stdout);
 }
 
-struct msdos_dir_entry *get_dentry(char *disk_image, char *path)
+int get_dentry(char *disk_image, char *path, struct msdos_dir_entry* result)
 {
     // open file
     int file = open(disk_image, O_RDONLY);
     if (file == -1) {
-        printf("Error opening file for the fat's -s flag.\n");
-        return NULL;// terminate the method
+        printf("Error opening  disk %s for the fat's -s flag.\n", disk_image);
+        return -1;// terminate the method
     }
     // eliminate root directory indicator "/"
     path = path[0] == '/' ? &path[1] : path;
     printf("PATH passed to get_dentry: #%s#\n", path);
-    struct msdos_dir_entry *dep, tmp;// dir entry pointer
+    struct msdos_dir_entry *dep;// dir entry pointer
     // read file
     // todo check if the file exists
     unsigned char buf[CLUSTER_SIZE];
     if (readcluster(file, buf, 2) != 0) {// todo a real implementation
         printf("Error reading %dth cluster in the file for the fat's -a flag.\n", 0);
-        return NULL;
+        return -1;
     }
     dep = (struct msdos_dir_entry *) (buf);
-    get_dentry_helper(file, &tmp, dep, path);
-    print_d_helper(&tmp);
+    get_dentry_helper(file, result, dep, path);
+    // print_d_helper(result);
     close(file);
-    return (struct msdos_dir_entry *) path;
+    return 1;
 }
 
 
@@ -429,11 +463,7 @@ int get_dentry_helper(int file_handle, struct msdos_dir_entry *result, struct ms
 void trim_split_filename(const char *full_8_3_filename, char *filename, char *extension)
 {
     int name_length = 8;
-    // copy the extension name
-    memcpy(extension, &full_8_3_filename[name_length], 3);
-    //printf("#%s#\n",extension);
-    extension[3] = '\0';
-    //printf("#%s#\n",extension);
+
     // trim file name and copy
     int start = 0;
     int end = name_length - 1;
@@ -445,6 +475,22 @@ void trim_split_filename(const char *full_8_3_filename, char *filename, char *ex
     }
     memcpy(filename, &full_8_3_filename[start], end - start + 1);
     filename[1 + end - start] = '\0';
+
+    // EXTRACT EXTENSION
+    start = name_length;
+    end = name_length + 3;
+    while (full_8_3_filename[start] == ' ') {
+        start++;
+    }
+    while (full_8_3_filename[end] == ' ') {
+        end = end - 1;
+    }
+    memcpy(extension, &full_8_3_filename[start], end - start + 1);
+    extension[1 + end - start] = '\0';
+    // pln("\n***");
+    // pln(filename);
+    // pln(extension);
+    // pln("***");
 }
 
 void toUpperCase(char *str)
@@ -493,10 +539,10 @@ void print_d_helper(struct msdos_dir_entry *dep)
         strcat(dep_sname, ext);
     }
     printf("name = %s\n", dep_sname);//FILE2.BIN
-    printf("type = %s\n", dep->attr == type_volume      ? "Volume"
-                          : dep->attr == type_directory ? "Directory"
-                          : dep->attr == type_file      ? "File"
-                                                        : "Unknown");     //FILE
+    printf("type = %s\n", dep->attr == type_volume      ? "VOLUME"
+                          : dep->attr == type_directory ? "DIRECTORY"
+                          : dep->attr == type_file      ? "FILE"
+                                                        : "UNKNOWN");     //FILE
     printf("firstcluster = %d\n", dep->start + (dep->starthi << 16));//7
     printf("clustercount = %d\n", -1);                               // todo 10
     printf("size(bytes) = %d\n", dep->size);                         // = 10240

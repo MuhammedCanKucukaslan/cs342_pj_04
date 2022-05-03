@@ -1,6 +1,7 @@
 #include <byteswap.h>
 #include <linux/types.h>
 #include <stdlib.h>// u_int8_t
+#include <linux/msdos_fs.h>// fat_boot_sector and msdos_dir_entry
 
 #ifdef DEBUG
 #define _DEBUG(fmt, args...) printf("%s:%s:%d: " fmt, __FILE__, __FUNCTION__, __LINE__, args)
@@ -96,7 +97,7 @@ void print_a(char *disk_image, /*unsigned*/ char *path);
  * @param disk_image
  * @param path
  */
-void print_b(char *disk_image, /*u_*/char *path);
+void print_b(char *disk_image, /*u_*/ char *path);
 
 /**
  * 9. fat DISKIMAGE -d PATH: print the content of the directory entry of the
@@ -112,7 +113,7 @@ void print_b(char *disk_image, /*u_*/char *path);
  * date = 09-04-2022
  * time = 10:00
  */
-void print_d(char *disk_image,char *path);
+void print_d(char *disk_image, char *path);
 
 void word_to_binary(unsigned long int num, char *binary);
 void init(char *disk_image_path);
@@ -122,14 +123,16 @@ int readcluster(int fd, unsigned char *buf, unsigned int cnum);// given in assig
 unsigned long int u8_to_ul(__u8 *arr, int length);
 void print_content(u_char *content, unsigned long int offset);
 
-struct msdos_dir_entry * get_dentry(char* disk_image,  char* entry) ;
-void trim_split_filename(const char * full_8_3_filename, char* filename, char* extension);
-void toUpperCase(char* str);
-int findUntilNext( char *result, char* str, char delimiter);
+int get_dentry(char *disk_image, char *path, struct msdos_dir_entry* result);
+void trim_split_filename(const char *full_8_3_filename, char *filename, char *extension);
+void toUpperCase(char *str);
+int findUntilNext(char *result, char *str, char delimiter);
+
 /**
  * return -1 on failure
- * retrun 1 on succes
+ * return 1 on success
  */
-int get_dentry_helper(int file_handle, struct msdos_dir_entry * result, struct msdos_dir_entry * cur_dentry,   char* remaining_path) ;
-void print_d_helper(struct msdos_dir_entry * result);
+int get_dentry_helper(int file_handle, struct msdos_dir_entry *result, struct msdos_dir_entry *cur_dentry,
+                      char *remaining_path);
+void print_d_helper(struct msdos_dir_entry *result);
 #endif
