@@ -371,8 +371,11 @@ struct msdos_dir_entry *get_dentry(char *disk_image, char *path)
     }
 
     get_dentry_helper(file, &tmp, dep, "DIR1" );
+    print_d_helper(&tmp);
     get_dentry_helper(file, &tmp, dep, "FILE2.BIN" );
+    print_d_helper(&tmp);
     get_dentry_helper(file, &tmp, dep, "FILE5.TXT" );
+    print_d_helper(&tmp);
     // close file
     close(file);
     return (struct msdos_dir_entry *) path;
@@ -479,9 +482,9 @@ int get_dentry_helper(int file_handle, struct msdos_dir_entry *result, struct ms
                         strcat(dep_sname, ext);
                     }
                     if(strcmp(dep_sname, search_entry_name) == 0) {
-                        printf("Found the match!\n");
+                        printf("\nFound the match!\n");
                         printf("dep_sname:%s: search_entry_name:%s: \n", dep_sname,search_entry_name);
-                        result = &dep[i];
+                        memcpy(result, &dep[i], sizeof(struct msdos_dir_entry));
                         return 1;
                     }
                     // printf("%s%c%s\ndep_sname:%s: search_entry_name:%s: ", n, dep[i].attr == type_file ? '.' : '\0', ext,dep_sname,search_entry_name);
@@ -492,4 +495,27 @@ int get_dentry_helper(int file_handle, struct msdos_dir_entry *result, struct ms
         }
     }
     return -1;
+}
+void print_d_helper(struct msdos_dir_entry *dep)
+{
+    // NAME SHOULD NOT TAKE THIS LONG
+    char dep_sname[12] = "\0";
+    char n[9], ext[4];
+    trim_split_filename((char *) dep->name, n, ext);
+    strcat(dep_sname, n);
+    // if(dep[i].attr == type_volume  ||  dep[i].attr == type_directory )
+    if( dep->attr == type_file) {
+        strcat(dep_sname, ".");
+        strcat(dep_sname, ext);
+    }
+    printf("name = %s\n", dep_sname); //FILE2.BIN
+    printf("type = %s\n", dep->attr == type_volume      ? "Volume"
+                          : dep->attr == type_directory ? "Directory"
+                            :dep->attr == type_file ? "File" : "Unknown" ); //FILE
+    printf("firstcluster = %d\n", dep->start + (dep->starthi << 16)); //7
+    printf("clustercount = %d\n", -1); // todo 10
+    printf("size(bytes)%d = \n", dep->size); // = 10240
+    printf("date = %#x\n", dep->date); //09-04-2022
+    printf("time = %#xd\n", dep->time); //10:00
+
 }

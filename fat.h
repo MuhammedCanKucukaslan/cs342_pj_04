@@ -98,6 +98,21 @@ void print_a(char *disk_image, /*unsigned*/ char *path);
  */
 void print_b(char *disk_image, /*u_*/char *path);
 
+/**
+ * 9. fat DISKIMAGE -d PATH: print the content of the directory entry of the
+ * file or directory indicated with PATH. Some information from the directory
+ * entry will be printed out. An example output is shown below. Use the
+ * same format and parameters.
+ * Command: ./fat disk1 -d /FILE2.BIN
+ * name = FILE2.BIN
+ * type = FILE
+ * firstcluster = 7
+ * clustercount = 10
+ * size(bytes) = 10240
+ * date = 09-04-2022
+ * time = 10:00
+ */
+void print_d(char *disk_image,char *path);
 
 void word_to_binary(unsigned long int num, char *binary);
 void init(char *disk_image_path);
@@ -116,4 +131,5 @@ int findUntilNext( char *result, char* str, char delimiter);
  * retrun 1 on succes
  */
 int get_dentry_helper(int file_handle, struct msdos_dir_entry * result, struct msdos_dir_entry * cur_dentry,   char* remaining_path) ;
+void print_d_helper(struct msdos_dir_entry * result);
 #endif
