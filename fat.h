@@ -1,10 +1,11 @@
 #include <byteswap.h>
+#include <linux/msdos_fs.h> // fat_boot_sector and msdos_dir_entry
 #include <linux/types.h>
-#include <stdlib.h>// u_int8_t
-#include <linux/msdos_fs.h>// fat_boot_sector and msdos_dir_entry
+#include <stdlib.h> // u_int8_t
 
 #ifdef DEBUG
-#define _DEBUG(fmt, args...) printf("%s:%s:%d: " fmt, __FILE__, __FUNCTION__, __LINE__, args)
+#define _DEBUG(fmt, args...)                                                   \
+  printf("%s:%s:%d: " fmt, __FILE__, __FUNCTION__, __LINE__, args)
 #else
 #define _DEBUG(fmt, args...)
 #endif
@@ -45,10 +46,10 @@ void print_v(char *disk_image);
  * fat DISKIMAGE -s SECTORNUM: print the content (byte sequence) of
  * the specified sector to screen in hex form. An example output is shown
  * below. Use the same format. Each line of output will have a sequence of
- * 16 bytes of the sector printed out in hex form. First, in a line, the offset of
- * the first byte in the sequence is printed in hex form (using 8 hex digits).
- * Then, the sequence of 16 bytes are printed out in hex form (between 2 hex
- * digits we have a SPACE character). Then the same sequence of 16 bytes
+ * 16 bytes of the sector printed out in hex form. First, in a line, the offset
+ * of the first byte in the sequence is printed in hex form (using 8 hex
+ * digits). Then, the sequence of 16 bytes are printed out in hex form (between
+ * 2 hex digits we have a SPACE character). Then the same sequence of 16 bytes
  * are also printed out with printable characters if possible. For that you will
  * use the isprint() function. If for a character isprint() returns true,
  * then you will print the character using %c format specifier in printf().
@@ -90,8 +91,8 @@ void print_a(char *disk_image, /*unsigned*/ char *path);
 /**
  * fat DISKIMAGE -b PATH: print the content (byte sequence) of the file
  * indicated with PATH to the screen in hex form in the following format. The
- * file can be a binary file or an ascii file, does not matter. An example output
- * is shown below. Use the same format. It is the output for the file
+ * file can be a binary file or an ascii file, does not matter. An example
+ * output is shown below. Use the same format. It is the output for the file
  * /DIR2/F1.TXT (a portion of it).
  * Command: ./fat disk1 -b /DIR2/F1.TXT
  * @param disk_image
@@ -116,15 +117,20 @@ void print_b(char *disk_image, /*u_*/ char *path);
 void print_d(char *disk_image, char *path);
 
 void word_to_binary(unsigned long int num, char *binary);
+
+
 void init(char *disk_image_path);
 
-int readsector(int fd, unsigned char *buf, unsigned int snum); // given in assignment
-int readcluster(int fd, unsigned char *buf, unsigned int cnum);// given in assignment
+int readsector(int fd, unsigned char *buf,
+               unsigned int snum); // given in assignment
+int readcluster(int fd, unsigned char *buf,
+                unsigned int cnum); // given in assignment
 unsigned long int u8_to_ul(__u8 *arr, int length);
 void print_content(u_char *content, unsigned long int offset);
 
-int get_dentry(char *disk_image, char *path, struct msdos_dir_entry* result);
-void trim_split_filename(const char *full_8_3_filename, char *filename, char *extension);
+int get_dentry(char *disk_image, char *path, struct msdos_dir_entry *result);
+void trim_split_filename(const char *full_8_3_filename, char *filename,
+                         char *extension);
 void toUpperCase(char *str);
 int findUntilNext(char *result, char *str, char delimiter);
 
@@ -132,8 +138,8 @@ int findUntilNext(char *result, char *str, char delimiter);
  * return -1 on failure
  * return 1 on success
  */
-int get_dentry_helper(int file_handle, struct msdos_dir_entry *result, struct msdos_dir_entry *cur_dentry,
-                      char *remaining_path);
+int get_dentry_helper(int file_handle, struct msdos_dir_entry *result,
+                      struct msdos_dir_entry *cur_dentry, char *remaining_path);
 void print_d_helper(int fd, struct msdos_dir_entry *dep);
 unsigned int readFAT(int file, u_int cnum);
 #endif
