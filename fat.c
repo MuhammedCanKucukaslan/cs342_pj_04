@@ -32,7 +32,9 @@ unsigned int root_start_cluster;
 unsigned long int disk_size_in_bytes;
 unsigned char type[9];
 unsigned char label[12];
-
+u_long number_of_clus;
+u_long used_cc;
+u_long free_cc;
 
 int main(int argc, char **argv) {
   // printf("%s : %d\n", argv[0], argc);
@@ -105,11 +107,11 @@ void init(char *disk_image_path) {
     pln("Error opening  disk");
   }
   // read file
-  u_int8_t sector[SECTOR_SIZE];
-  read(file, sector, SECTOR_SIZE);
+  u_int8_t buf[SECTOR_SIZE];
+  read(file, buf, SECTOR_SIZE);
 
   // we copy the content. "=" is another thing.
-  memcpy(&fbs, (struct fat_boot_sector *)sector,
+  memcpy(&fbs, (struct fat_boot_sector *)buf,
          sizeof(struct fat_boot_sector)); // type casting
 
   sectors_per_cluster = fbs.sec_per_clus;
@@ -121,17 +123,42 @@ void init(char *disk_image_path) {
   data_start_sector = RESERVED_SECTOR_COUNT + num_fats * sectors_per_fat;
   disk_size_in_bytes = num_sectors * SECTOR_SIZE;
 
-  for (int i = 0; i < 8 && fbs.fat32.fs_type[i] != '\0'; i++) {
-    type[i] = fbs.fat32.fs_type[i];
-  }
-  type[8] = '\0';
+  number_of_clus =
+      (sectors_per_fat * SECTOR_SIZE) / 4; /*size used to represent a cluster*/
+  used_cc = 0;
+  free_cc = 0;
+  readsector(file, buf, fat_start_sector);
 
-  for (int i = 0; i < 11 && fbs.fat32.vol_label[i] != '\0'; i++) {
-    label[i] = fbs.fat32.vol_label[i];
+  u_int tmp;
+  for (int i = 2; i < 2 + number_of_clus; ++i) {
+    // if(0 == i % SECTOR_SIZE) {
+    //   readsector(file, buf, fat_start_sector + (int)(i / SECTOR_SIZE));
+    // printf("used: %lu; free %lu.\n") ;
   }
-  label[11] = '\0';
+  // // should we include first two clusters?
+  // tmp = ((u_int *)buf)[i % SECTOR_SIZE];
+  //
+  // printf("%u: %.8x\n", i, tmp);
+  if (readFAT(file, i) == 0) {
+    free_cc++;
+  } else {
+    used_cc++;
+  }
 
-  close(file);
+  // print_content((u_char *)(buf)[4 * (i % SECTOR_SIZE)],i);
+}
+
+for (int i = 0; i < 8 && fbs.fat32.fs_type[i] != '\0'; i++) {
+  type[i] = fbs.fat32.fs_type[i];
+}
+type[8] = '\0';
+
+for (int i = 0; i < 11 && fbs.fat32.vol_label[i] != '\0'; i++) {
+  label[i] = fbs.fat32.vol_label[i];
+}
+label[11] = '\0';
+
+close(file);
 }
 
 /*
@@ -152,16 +179,14 @@ void print_v(char *disk_image) {
   // "the number of clusters that the file system can manage can be found as
   // follows: cluster_count = (sectors_per_FAT * 512 / 4)"
   // qtd. from the last 3 lines of the 3rd page  of the assignment
-  printf("Number of clusters = %d\n",
-         (sectors_per_fat * SECTOR_SIZE) /
-             4 /*size used to represent a cluster*/);
+  printf("Number of clusters = %lu\n", number_of_clus);
   printf("Data region starts at sector: %d\n", data_start_sector);
   printf("Root directory starts at sector: %d\n", data_start_sector);
   printf("Root directory starts at cluster: %d\n", root_start_cluster);
   printf("Disk size in bytes: %lu bytes\n", disk_size_in_bytes);
   printf("Disk size in Megabytes: %lu MB\n", (disk_size_in_bytes / MEGA_TO));
-  printf("Number of used clusters: %d\n", todo); // todo calculate
-  printf("Number of free clusters: %d\n", todo); // todo calculate
+  printf("Number of used clusters: %lu\n", used_cc); // todo calculate
+  printf("Number of free clusters: %lu\n", free_cc); // todo calculate
 }
 /*
  * fat DISKIMAGE -s SECTORNUM: print the content (byte sequence) of
