@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
   init(argv[1]);
 
   if (strcmp(argv[2], "-v") == 0) {
-    pln("print info");
+    // pln("print info");
     print_v(argv[1]);
   } else if (strcmp(argv[2], "-s") == 0) {
     // printf("print -s sector %d of disk %s\n", atoi(argv[3]), argv[1]);
@@ -131,34 +131,34 @@ void init(char *disk_image_path) {
 
   u_int tmp;
   for (int i = 2; i < 2 + number_of_clus; ++i) {
-    // if(0 == i % SECTOR_SIZE) {
-    //   readsector(file, buf, fat_start_sector + (int)(i / SECTOR_SIZE));
-    // printf("used: %lu; free %lu.\n") ;
+    if (0 == i % (SECTOR_SIZE / 4)) {
+      readsector(file, buf, fat_start_sector + (int)(i / (SECTOR_SIZE / 4)));
+      // printf("used: %lu; free %lu.\n") ;
+    }
+    // // should we include first two clusters?
+    tmp = ((u_int *)buf)[i % (SECTOR_SIZE / 4)];
+    //
+    // printf("%u: %.8x\n", i, tmp);
+    if (tmp == 0) {
+      free_cc++;
+    } else {
+      used_cc++;
+    }
+
+    // print_content((u_char *)(buf)[4 * (i % SECTOR_SIZE)],i);
   }
-  // // should we include first two clusters?
-  // tmp = ((u_int *)buf)[i % SECTOR_SIZE];
-  //
-  // printf("%u: %.8x\n", i, tmp);
-  if (readFAT(file, i) == 0) {
-    free_cc++;
-  } else {
-    used_cc++;
+
+  for (int i = 0; i < 8 && fbs.fat32.fs_type[i] != '\0'; i++) {
+    type[i] = fbs.fat32.fs_type[i];
   }
+  type[8] = '\0';
 
-  // print_content((u_char *)(buf)[4 * (i % SECTOR_SIZE)],i);
-}
+  for (int i = 0; i < 11 && fbs.fat32.vol_label[i] != '\0'; i++) {
+    label[i] = fbs.fat32.vol_label[i];
+  }
+  label[11] = '\0';
 
-for (int i = 0; i < 8 && fbs.fat32.fs_type[i] != '\0'; i++) {
-  type[i] = fbs.fat32.fs_type[i];
-}
-type[8] = '\0';
-
-for (int i = 0; i < 11 && fbs.fat32.vol_label[i] != '\0'; i++) {
-  label[i] = fbs.fat32.vol_label[i];
-}
-label[11] = '\0';
-
-close(file);
+  close(file);
 }
 
 /*
@@ -166,8 +166,6 @@ close(file);
  * specified FAT32 volume DISKIMAGE.
  */
 void print_v(char *disk_image) {
-  int todo = -1;
-
   printf("File system type: %s\n", type); // == NULL ? "FAT32" : "FAT16");
   printf("Volume label: %s\n", label);
   printf("Number of sectors in disk: %d\n", num_sectors);
@@ -185,9 +183,10 @@ void print_v(char *disk_image) {
   printf("Root directory starts at cluster: %d\n", root_start_cluster);
   printf("Disk size in bytes: %lu bytes\n", disk_size_in_bytes);
   printf("Disk size in Megabytes: %lu MB\n", (disk_size_in_bytes / MEGA_TO));
-  printf("Number of used clusters: %lu\n", used_cc); // todo calculate
-  printf("Number of free clusters: %lu\n", free_cc); // todo calculate
+  printf("Number of used clusters: %lu\n", used_cc);
+  printf("Number of free clusters: %lu\n", free_cc);
 }
+
 /*
  * fat DISKIMAGE -s SECTORNUM: print the content (byte sequence) of
  * the specified sector to screen in hex form.
