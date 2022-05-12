@@ -115,6 +115,41 @@ void print_b(char *disk_image, /*u_*/ char *path);
  */
 void print_d(char *disk_image, char *path);
 
+/**
+ * fat DISKIMAGE -t: print all directories and their files and
+ * subdirectories starting from the root directory, recursively, in a depth-first
+ * search order. That means you will traverse the whole directory tree and
+ * print the names of the files and directories encountered. An example
+ * output is shown below. Use the same format. Each line gives the full
+ * pathname of a file or directory. Whether the pathname is for a file or
+ * directory is indicated with (f) or (d) in the beginning of the line.
+ * Command: ./fat disk1 -t
+ *
+ * (f) /FILE1.BIN
+ * (f) /FILE2.BIN
+ * (f) /FILE3.BIN
+ * (f) /FILE4.BIN
+ * (f) /FILE5.TXT
+ * (d) /DIR2
+ * (d) /DIR2/.
+ * (d) /DIR2/..
+ * (f) /DIR2/F2.BIN
+ * (f) /DIR2/F1.TXT
+ * (d) /DIR1
+ * (d) /DIR1/.
+ * (d) /DIR1/..
+ * (f) /DIR1/PROGRAM.C
+ * (f) /DIR1/AFILE1.BIN
+ * (d) /DIR1/DD1
+ * (d) /DIR1/DD1/.
+ * (d) /DIR1/DD1/..
+ * (f) /DIR1/DD1/PFILE.BIN
+ * (f) /DIR1/DD1/PF1.TXT
+ * (f) /DIR1/DD1/PFILE2.BIN
+ *
+ */
+void print_t(char *diski);
+
 void word_to_binary(unsigned long int num, char *binary);
 
 void init(char *disk_image_path);

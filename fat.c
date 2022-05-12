@@ -70,7 +70,7 @@ int main(int argc, char **argv)
     else if (strcmp(argv[2], "-t") == 0)
     {
         // printf("print -t %d of disk %s\n", atoi(argv[3]), argv[1]);
-        // print_t(argv[3]);
+        print_t(argv[1]);
     }
     else if (strcmp(argv[2], "-r") == 0)
     {
@@ -125,6 +125,10 @@ int main(int argc, char **argv)
 
     // pln("after if elses of the command flags!");
     return 0;
+}
+void print_t(char *diski)
+{
+
 }
 
 /*
