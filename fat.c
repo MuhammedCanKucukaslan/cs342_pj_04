@@ -743,7 +743,7 @@ void toUpperCase(char *str)
 {
     for (u_long i = strlen(str); i > 0; i--)
     {
-        if (str[i] > 'a' && str[i] <= 'z')
+        if (str[i] >= 'a' && str[i] <= 'z')
         {
             str[i] = (char)toupper(str[i]);
         }
