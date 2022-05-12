@@ -1,14 +1,14 @@
 #include "fat.h"
-#include <fcntl.h>          // open()
-#include <linux/msdos_fs.h> // fat_boot_sector and msdos_dir_entry
-#include <stdio.h>          // printf()
-//#include <stdlib.h>        // u_int8_t
 #include <byteswap.h>
 #include <ctype.h>
+#include <fcntl.h>          // open()
+#include <linux/msdos_fs.h> // fat_boot_sector and msdos_dir_entry
 #include <linux/types.h>
+#include <stdio.h>    // printf()
 #include <string.h>   // for strcmp() method
 #include <sys/mman.h> // stat()
-#include <unistd.h>   // and read()
+#include <time.h>
+#include <unistd.h> // and read()
 
 // declare the constants
 int data_start_sector;
@@ -110,7 +110,7 @@ int main(int argc, char **argv)
     else if (strcmp(argv[2], "-l") == 0)
     {
         // printf("print -l %d of disk %s\n", atoi(argv[3]), argv[1]);
-        // print_l(argv[3]);
+        print_l(argv[1], argv[3]);
     }
     else if (strcmp(argv[2], "-l") == 0)
     {
@@ -126,9 +126,118 @@ int main(int argc, char **argv)
     // pln("after if elses of the command flags!");
     return 0;
 }
-void print_t(char *diski)
+void print_l(char *disk_image, char *path)
 {
+    toUpperCase(path);
+    int fd = open(disk_image, O_SYNC | O_RDONLY);
+    if (fd == -1)
+    {
+        printf("Error opening disk %s for the fat's -a flag.\n", disk_image);
+        return; // terminate the method
+    }
+    struct msdos_dir_entry dep1;
+    struct msdos_dir_entry *dep;
 
+    if (strcmp("/", path) == 0)
+    {
+        u_int8_t cluster[CLUSTER_SIZE];
+        readcluster(fd, cluster, 2);
+        dep = (struct msdos_dir_entry *)cluster;
+        for (int i = 0; i < CLUSTER_SIZE / 32; ++i)
+        {
+            if (dep->name[0] != 0xe5 && dep->name[0] != 0x00) // e5 and 00 is for empty
+            {
+                int day, month, year, /*secs,*/ mins, hours;
+                {
+                    day = dep->date & 31;
+                    month = ((dep->date >> 5) - 1) & 15;
+                    year = dep->date >> 9;
+                    // secs = (dep->time & 31) * 2;
+                    mins = ((dep->time >> 5) & 63);
+                    hours = (dep->time >> 11);
+                    /* days since 1.1.70 plus 80's leap day */
+                    // printf("date = %.2d-%.2d-%.4d\n", day, month, year + 1980); // 09-04-2022
+                    // printf("time = %.2d:%.2d\n", hours, mins);                  // 10:00
+                }
+                if (dep->attr == 0x10)
+                {
+                    printf("(d) name=%-14s fcn=%6d size(bytes)=       0 date = %.2d-%.2d-%.4d time = %.2d:%.2d",
+                           dep->name, (dep->starthi << 16 | dep->start), day, month, year + 1980, hours, mins);
+                }
+                if (dep->attr == 0x20)
+                {
+                    char name[MSDOS_NAME];
+                    char ext[MSDOS_NAME];
+                    trim_split_filename(dep->name, name, ext);
+                    strcat(name, ".");
+                    strcat(name, ext);
+                    trim_split_filename(dep->name, name, ext);
+                    printf("(f) name=%-14s fcn=%6d size(bytes)=%8d date = %.2d-%.2d-%.4d time = %.2d:%.2d", name,
+                           (dep->starthi << 16 | dep->start), dep->size, day, month, year + 1980, hours, mins);
+                }
+                pln("");
+            }
+            ++dep;
+        }
+    }
+    else
+    {
+        u_int8_t cluster[CLUSTER_SIZE];
+        get_dentry(disk_image, path, &dep1);
+        dep = &dep1;
+        u_int cur_clu_no = dep->start + (dep->starthi << 16);
+        readcluster(fd, cluster, cur_clu_no);
+        dep = (struct msdos_dir_entry *)cluster;
+        for (int i = 0; i < CLUSTER_SIZE / 32; ++i)
+        {
+            if (dep->name[0] != 0xe5 && dep->name[0] != 0x00) // e5 and 00 is for empty
+            {
+                int day, month, year, /*secs,*/ mins, hours;
+                {
+                    day = dep->date & 31;
+                    month = ((dep->date >> 5) - 1) & 15;
+                    year = dep->date >> 9;
+                    // secs = (dep->time & 31) * 2;
+                    mins = ((dep->time >> 5) & 63);
+                    hours = (dep->time >> 11);
+                    /* days since 1.1.70 plus 80's leap day */
+                    // printf("date = %.2d-%.2d-%.4d\n", day, month, year + 1980); // 09-04-2022
+                    // printf("time = %.2d:%.2d\n", hours, mins);                  // 10:00
+                }
+                if (dep->attr == 0x10)
+                {
+                    if (i < 2)
+                    {
+                        printf("(d) name=%-14s fcn=%6d size(bytes)=       0 date = %.2d-%.2d-%.4d time = %.2d:%.2d",
+                               dep->name, 0, day, month, year + 1980, hours, mins);
+                    }
+                    else
+                    {
+                        printf("(d) name=%-14s fcn=%6d size(bytes)=       0 date = %.2d-%.2d-%.4d time = %.2d:%.2d",
+                               dep->name, (dep->starthi << 16 | dep->start), day, month, year + 1980, hours, mins);
+                    }
+                }
+                if (dep->attr == 0x20)
+                {
+
+
+                    char name[MSDOS_NAME];
+                    char ext[MSDOS_NAME];
+                    trim_split_filename(dep->name, name, ext);
+                    strcat(name, ".");
+                    strcat(name, ext);
+                    printf("(f) name=%-14s fcn=%6d size(bytes)=%8d date = %.2d-%.2d-%.4d time = %.2d:%.2d", name,
+                           (dep->starthi << 16 | dep->start), dep->size, day, month, year + 1980, hours, mins);
+                }
+                pln("");
+            }
+            ++dep;
+        }
+    }
+    close(fd);
+}
+void print_t(char *disk_image)
+{
 }
 
 /*

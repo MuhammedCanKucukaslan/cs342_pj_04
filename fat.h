@@ -11,6 +11,18 @@
 #ifndef FAT
 #define FAT
 
+#define SECS_PER_MIN 60
+#define SECS_PER_HOUR (60 * 60)
+#define SECS_PER_DAY (SECS_PER_HOUR * 24)
+/* days between 1.1.70 and 1.1.80 (2 leap days) */
+#define DAYS_DELTA (365 * 10 + 2)
+/* 120 (2100 - 1980) isn't leap year */
+#define YEAR_2100 120
+#define IS_LEAP_YEAR(y) (!((y)&3) && (y) != YEAR_2100)
+static long days_in_year[] = {
+    /* Jan  Feb  Mar  Apr  May  Jun  Jul  Aug  Sep  Oct  Nov  Dec */
+    0, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 0, 0, 0,
+};
 // method declaration
 void pln(char *input);
 
@@ -148,7 +160,29 @@ void print_d(char *disk_image, char *path);
  * (f) /DIR1/DD1/PFILE2.BIN
  *
  */
-void print_t(char *diski);
+void print_t(char *disk_image);
+
+/**
+ * fat DISKIMAGE -l PATH: print the names of the files and
+ * subdirectories in the directory indicated with PATH. The pathname for the
+ * root directory is “/”. In each line of output, print the name of a file or
+ * directory (not pathname), its first cluster number, its size (in bytes), and
+ * its date-time information. You will get the date and time information from
+ * offset 22 (4 bytes) of a directory entry (or from the date, time field of the
+ * msdos_dir_entry structure explained later). An example output is
+ * shown below. Use the same format. Command: ./fat disk1 -l /DIR1
+ *
+ * (d) name=.            fcn=28  size(bytes)=0       date=09-04-2022:10:38
+ * (d) name=..           fcn=0   size(bytes)=0       date=09-04-2022:10:38
+ * (f) name=PROGRAM.C    fcn=32  size(bytes)=102     date=09-04-2022:10:40
+ * (f) name=AFILE1.BIN   fcn=60  size(bytes)=51200   date=09-04-2022:10:48
+ * (d) name=DD1          fcn=110 size(bytes)=0        date=10-04-2022:13:18
+ *
+ * @param disk_image
+ * @param path
+ */
+void print_l(char *disk_image, char *path);
+
 
 void word_to_binary(unsigned long int num, char *binary);
 

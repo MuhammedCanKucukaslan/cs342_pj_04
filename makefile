@@ -36,7 +36,7 @@ d: fat
 l: fat
 	./fat disk1 -l /
 l2: fat
-	./fat disk1 -l /DIR2
+	./fat disk1 -l /DIR1
 h: fat
 	./fat disk1 -h
 val: all
