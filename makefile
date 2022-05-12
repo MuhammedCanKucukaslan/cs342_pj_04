@@ -39,6 +39,11 @@ l2: fat
 	./fat disk1 -l /DIR2
 h: fat
 	./fat disk1 -h
+neat_test:
+	./fat disk1 -d /file2.bin
+	./fat disk1 -n /file2.bin
+	./fat disk1 -f 20
+
 val: all
 	valgrind -s --leak-check=full --show-leak-kinds=all --leak-resolution=high --track-origins=yes --vgdb=yes ./fat disk1 -v
 hel: all
