@@ -4,8 +4,7 @@
 #include <stdlib.h> // u_int8_t
 
 #ifdef DEBUG
-#define _DEBUG(fmt, args...)                                                   \
-  printf("%s:%s:%d: " fmt, __FILE__, __FUNCTION__, __LINE__, args)
+#define _DEBUG(fmt, args...) printf("%s:%s:%d: " fmt, __FILE__, __FUNCTION__, __LINE__, args)
 #else
 #define _DEBUG(fmt, args...)
 #endif
@@ -118,7 +117,6 @@ void print_d(char *disk_image, char *path);
 
 void word_to_binary(unsigned long int num, char *binary);
 
-
 void init(char *disk_image_path);
 
 int readsector(int fd, unsigned char *buf,
@@ -129,8 +127,7 @@ unsigned long int u8_to_ul(__u8 *arr, int length);
 void print_content(u_char *content, unsigned long int offset);
 
 int get_dentry(char *disk_image, char *path, struct msdos_dir_entry *result);
-void trim_split_filename(const char *full_8_3_filename, char *filename,
-                         char *extension);
+void trim_split_filename(const char *full_8_3_filename, char *filename, char *extension);
 void toUpperCase(char *str);
 int findUntilNext(char *result, char *str, char delimiter);
 
@@ -138,8 +135,8 @@ int findUntilNext(char *result, char *str, char delimiter);
  * return -1 on failure
  * return 1 on success
  */
-int get_dentry_helper(int file_handle, struct msdos_dir_entry *result,
-                      struct msdos_dir_entry *cur_dentry, char *remaining_path);
+int get_dentry_helper(int file_handle, struct msdos_dir_entry *result, struct msdos_dir_entry *cur_dentry,
+                      char *remaining_path);
 void print_d_helper(int fd, struct msdos_dir_entry *dep);
 unsigned int readFAT(int file, u_int cnum);
 #endif
