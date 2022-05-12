@@ -48,6 +48,8 @@ int main(int argc, char **argv)
     if (argc == 2)
     {
         // todo print help
+        print_h();
+        exit(0);
     }
 
     init(argv[1]);
@@ -126,7 +128,6 @@ int main(int argc, char **argv)
     // pln("after if elses of the command flags!");
     return 0;
 }
-
 /*
  * initialize basic variables, especially the fat_boot_sector fbs
  */
@@ -448,7 +449,41 @@ void print_d(char *disk_image, char *path)
         close(fd);
     }
 }
+
+
+void print_h()
+{
+    printf("fat DISKIMAGE -v:\n      print some summary information about the "
+           "specified FAT32 volume DISKIMAGE\n"
+           "\nfat DISKIMAGE -s SECTORNUM:\n      print the content (byte sequence) of "
+           "the specified sector to screen in hex form\n"
+           "\nfat DISKIMAGE -c CLUSTERNUM:\n      print the content (byte sequence) of "
+           "the specified cluster to the screen in hex form.\n"
+           "\nfat DISKIMAGE -t:\n      print all directories and their files and subdirectories starting from the root directory, "
+           "recursively, in a depth-first search order.\n"
+           "\nfat DISKIMAGE -a PATH:\n      print the content of the ascii text file indicated with PATH to the screen as it is.\n"
+           "\nfat DISKIMAGE -b PATH:\n      print the content (byte sequence) of the file indicated"
+           " with PATH to the screen in hex form\n"
+           "\nfat DISKIMAGE -l PATH:\n      print the names of the files and subdirectories in the directory indicated with PATH.\n"
+           "\nfat DISKIMAGE -n PATH:\n      print the numbers of the clusters storing the content of the file or directory indicated with PATH.\n"
+           "\nfat DISKIMAGE -d PATH:\n      print the content of the directory entry of the file or directory indicated with PATH.\n"
+           "\nfat DISKIMAGE -f COUNT:\n      print the content of the FAT table. The first COUNT entries will be printed out.\n"
+           "\nfat DISKIMAGE -r PATH OFFSET COUNT:\n      read COUNT bytes from the file indicated with PATH starting at\n"
+           "     OFFSET (byte offset into the file) and print the bytes read to the screen\n"
+           "\nfat DISKIMAGE -m COUNT:\n      print a map of the volume. For each cluster,\n"
+           "     you need to print if that cluster is used or not, if used to which directory or\n"
+           "     file it belongs (full path will be printed out)\n"
+           "\nfat -h:\n      print a help page showing all 12 options (operations) listed above and their respective parameters.\n");
+}
+
+
+
 // ############################################################################
+
+
+
+
+
 /**
  * @brief Convert the unsigned long to char array
  * in binary form
@@ -573,6 +608,8 @@ int get_dentry(char *disk_image, char *path, struct msdos_dir_entry *result)
     close(file);
     return 1;
 }
+
+
 
 /*
  * return -1 on failure

@@ -115,6 +115,10 @@ void print_b(char *disk_image, /*u_*/ char *path);
  */
 void print_d(char *disk_image, char *path);
 
+void print_h();
+
+
+
 void word_to_binary(unsigned long int num, char *binary);
 
 void init(char *disk_image_path);
