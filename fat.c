@@ -934,7 +934,7 @@ void print_d_helper(int fd, struct msdos_dir_entry *dep)
     // refer to https://formats.kaitai.io/dos_datetime/
     int day, month, year, /*secs,*/ mins, hours;
     day = dep->date & 31;
-    month = ((dep->date >> 5) - 1) & 15;
+    month = ((dep->date >> 5) ) & 15;
     year = dep->date >> 9;
     // secs = (dep->time & 31) * 2;
     mins = ((dep->time >> 5) & 63);
