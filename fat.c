@@ -579,6 +579,41 @@ void print_r(char *disk_image, char *path, int OFFSET, int COUNT)
 
 void print_f(char *disk_image, int count)
 {
+    int fd = open(disk_image, O_RDONLY);
+    if (fd == -1)
+    {
+        pln("Error opening  disk");
+    }
+    int current = 0;
+    // find the sector & the offset
+    u_int snum =
+        fat_start_sector;
+    u_int clu_cnt_per_sec = (SECTOR_SIZE / 4);
+    u_char buf[SECTOR_SIZE];
+    u_int next_clu;
+    while( current < count && current < number_of_clus)
+    {
+        if( current % clu_cnt_per_sec == 0)
+        {
+            readsector(fd, buf, snum);
+            snum++;
+        }
+        next_clu = ((u_int *)buf)[current%clu_cnt_per_sec];
+        printf("%.8d %.5d: ", current, current%clu_cnt_per_sec);
+        //, next_clu < 0x0FFFFFF7 ?itoa(next_clu) : "EOF" );
+        if( next_clu >= 0x0FFFFFF8){ // "greater" just in case
+            printf("EOF\n");
+        }
+        else if( next_clu == 0x0FFFFFF7){
+            printf("BAD CLUSTER\n");
+        }
+        else {
+            printf("%.8d\n", next_clu);
+        }
+        current++;
+    }
+
+    close(fd);
 }
 
 void print_n(char *disk_image, char *path)
