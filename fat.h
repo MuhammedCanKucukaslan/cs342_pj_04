@@ -100,6 +100,19 @@ void print_a(char *disk_image, /*unsigned*/ char *path);
 void print_b(char *disk_image, /*u_*/ char *path);
 
 /**
+ * 11. fat DISKIMAGE -r PATH OFFSET COUNT: read COUNT bytes from the
+ * file indicated with PATH starting at OFFSET (byte offset into the file) and
+ * print the bytes read to the screen as shown in the example below, which
+ * shows the output for 200 bytes from the file starting at offset 14 of the file
+ * (the first byte of a file has offset 0). Use the same format. If OFFSET +
+ * COUNT is greater that the filesize, just read till the end of the file and print
+ * the respective content. Command: ./fat disk1 -r /FILE5.TXT 14 200
+ * @param disk_image
+ * @param path
+ */
+void print_r(char *disk_image, /*u_*/ char *path, int offset, int count);
+
+/**
  * 9. fat DISKIMAGE -d PATH: print the content of the directory entry of the
  * file or directory indicated with PATH. Some information from the directory
  * entry will be printed out. An example output is shown below. Use the
@@ -129,6 +142,7 @@ int readcluster(int fd, unsigned char *buf,
                 unsigned int cnum); // given in assignment
 unsigned long int u8_to_ul(__u8 *arr, int length);
 void print_content(u_char *content, unsigned long int offset);
+void print_content_for_r(u_char *content, unsigned long int offset, int length);
 
 int get_dentry(char *disk_image, char *path, struct msdos_dir_entry *result);
 void trim_split_filename(const char *full_8_3_filename, char *filename, char *extension);

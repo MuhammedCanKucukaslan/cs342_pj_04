@@ -76,8 +76,8 @@ int main(int argc, char **argv)
     }
     else if (strcmp(argv[2], "-r") == 0)
     {
-        // printf("print -r %d of disk %s\n", atoi(argv[3]), argv[1]);
-        // print_r(argv[3]);
+        //printf("print -r %d of disk %s\n", atoi(argv[3]), argv[1]);
+        print_r(argv[1], argv[3], atoi(argv[4]), atoi(argv[5]));
     }
     else if (strcmp(argv[2], "-b") == 0)
     {
@@ -108,11 +108,6 @@ int main(int argc, char **argv)
     {
         // printf("print -d %d of disk %s\n", atoi(argv[3]), argv[1]);
         print_d(argv[1], argv[3]);
-    }
-    else if (strcmp(argv[2], "-l") == 0)
-    {
-        // printf("print -l %d of disk %s\n", atoi(argv[3]), argv[1]);
-        // print_l(argv[3]);
     }
     else if (strcmp(argv[2], "-l") == 0)
     {
@@ -453,35 +448,135 @@ void print_d(char *disk_image, char *path)
 
 void print_h()
 {
-    printf("fat DISKIMAGE -v:\n      print some summary information about the "
-           "specified FAT32 volume DISKIMAGE\n"
-           "\nfat DISKIMAGE -s SECTORNUM:\n      print the content (byte sequence) of "
-           "the specified sector to screen in hex form\n"
-           "\nfat DISKIMAGE -c CLUSTERNUM:\n      print the content (byte sequence) of "
-           "the specified cluster to the screen in hex form.\n"
-           "\nfat DISKIMAGE -t:\n      print all directories and their files and subdirectories starting from the root directory, "
-           "recursively, in a depth-first search order.\n"
-           "\nfat DISKIMAGE -a PATH:\n      print the content of the ascii text file indicated with PATH to the screen as it is.\n"
-           "\nfat DISKIMAGE -b PATH:\n      print the content (byte sequence) of the file indicated"
-           " with PATH to the screen in hex form\n"
-           "\nfat DISKIMAGE -l PATH:\n      print the names of the files and subdirectories in the directory indicated with PATH.\n"
-           "\nfat DISKIMAGE -n PATH:\n      print the numbers of the clusters storing the content of the file or directory indicated with PATH.\n"
-           "\nfat DISKIMAGE -d PATH:\n      print the content of the directory entry of the file or directory indicated with PATH.\n"
-           "\nfat DISKIMAGE -f COUNT:\n      print the content of the FAT table. The first COUNT entries will be printed out.\n"
-           "\nfat DISKIMAGE -r PATH OFFSET COUNT:\n      read COUNT bytes from the file indicated with PATH starting at\n"
-           "     OFFSET (byte offset into the file) and print the bytes read to the screen\n"
-           "\nfat DISKIMAGE -m COUNT:\n      print a map of the volume. For each cluster,\n"
-           "     you need to print if that cluster is used or not, if used to which directory or\n"
-           "     file it belongs (full path will be printed out)\n"
-           "\nfat -h:\n      print a help page showing all 12 options (operations) listed above and their respective parameters.\n");
+    printf(
+        "fat DISKIMAGE -v:\n      print some summary information about the "
+        "specified FAT32 volume DISKIMAGE\n"
+        "\nfat DISKIMAGE -s SECTORNUM:\n      print the content (byte sequence) of "
+        "the specified sector to screen in hex form\n"
+        "\nfat DISKIMAGE -c CLUSTERNUM:\n      print the content (byte sequence) of "
+        "the specified cluster to the screen in hex form.\n"
+        "\nfat DISKIMAGE -t:\n      print all directories and their files and subdirectories starting from the root "
+        "directory, "
+        "recursively, in a depth-first search order.\n"
+        "\nfat DISKIMAGE -a PATH:\n      print the content of the ascii text file indicated with PATH to the screen as "
+        "it is.\n"
+        "\nfat DISKIMAGE -b PATH:\n      print the content (byte sequence) of the file indicated"
+        " with PATH to the screen in hex form\n"
+        "\nfat DISKIMAGE -l PATH:\n      print the names of the files and subdirectories in the directory indicated "
+        "with PATH.\n"
+        "\nfat DISKIMAGE -n PATH:\n      print the numbers of the clusters storing the content of the file or "
+        "directory indicated with PATH.\n"
+        "\nfat DISKIMAGE -d PATH:\n      print the content of the directory entry of the file or directory indicated "
+        "with PATH.\n"
+        "\nfat DISKIMAGE -f COUNT:\n      print the content of the FAT table. The first COUNT entries will be printed "
+        "out.\n"
+        "\nfat DISKIMAGE -r PATH OFFSET COUNT:\n      read COUNT bytes from the file indicated with PATH starting at\n"
+        "     OFFSET (byte offset into the file) and print the bytes read to the screen\n"
+        "\nfat DISKIMAGE -m COUNT:\n      print a map of the volume. For each cluster,\n"
+        "     you need to print if that cluster is used or not, if used to which directory or\n"
+        "     file it belongs (full path will be printed out)\n"
+        "\nfat -h:\n      print a help page showing all 12 options (operations) listed above and their respective "
+        "parameters.\n");
 }
 
 
+void print_r(char *disk_image, char *path, int OFFSET, int COUNT)
+{
+    toUpperCase(path);
+    //pln(path);
+
+    struct msdos_dir_entry dirEntry;
+
+    if (-1 == get_dentry(disk_image, path, &dirEntry))
+    {
+        printf("The file \"%s\" could not be found!", path);
+    }
+    else
+    {
+        int fd = open(disk_image, O_RDONLY);
+        if (fd == -1)
+        {
+            printf("Error opening disk %s for the fat's -a flag.\n", disk_image);
+            return; // terminate the method
+        }
+        // print_d_helper(fd, &dirEntry);
+
+        // pln("Start writing the file content!");
+        // pln("----------------------------");
+        u_char content[content_length_per_line + 1];
+
+        long int rem_size = COUNT;     //
+        long int clu_rem_size = COUNT; //
+                                       // dirEntry.size ;
+        // if( rem_size > OFFSET + COUNT){
+        //     rem_size = OFFSET + COUNT;
+        // }
+
+        u_int cur_clu_no = dirEntry.start + (dirEntry.starthi << 16);
+        u_char buf[CLUSTER_SIZE];
+
+        // find the first cluster
+        int OFFSET_CLUSTER_COUNT = OFFSET / CLUSTER_SIZE;
+        int current_offset = OFFSET % CLUSTER_SIZE;
+        for (int i = 0; i < OFFSET_CLUSTER_COUNT; i++)
+        {
+            if (cur_clu_no >= 0x0FFFFFF7)
+            {
+                printf("\nEnd of the cluster, or bad cluster: %#x.\n", cur_clu_no);
+                break;
+            }
+            // readcluster(fd, buf, cur_clu_no);
+            else
+            {
+                cur_clu_no = readFAT(fd, cur_clu_no);
+            }
+        }
+        long int cont_lenght = content_length_per_line;
+        while (rem_size > 0)
+        {
+            int offset = 0;
+
+            if (cur_clu_no >= 0x0FFFFFF7)
+            {
+                // printf("\nEnd of the cluster, or bad cluster: %#x.\n", cur_clu_no);
+                break;
+            }
+            readcluster(fd, buf, cur_clu_no);
+            if (current_offset + rem_size < CLUSTER_SIZE)
+            {
+                buf[current_offset + rem_size] = '\0';
+                clu_rem_size = current_offset + rem_size;
+                rem_size = 0;
+            }
+            else
+            {
+                rem_size = rem_size + current_offset - CLUSTER_SIZE;
+                cur_clu_no = readFAT(fd, cur_clu_no);
+                clu_rem_size = CLUSTER_SIZE;
+            }
+
+            while (current_offset + offset * content_length_per_line < clu_rem_size)
+            {
+                cont_lenght = content_length_per_line;
+                if (current_offset + (1 + offset) * content_length_per_line > clu_rem_size)
+                {
+                    cont_lenght = clu_rem_size - (1 + current_offset + offset * content_length_per_line);
+                }
+                memcpy(content, &buf[current_offset + offset * content_length_per_line], content_length_per_line);
+
+                content[content_length_per_line] = '\0';
+                //pln((char *)&content);
+                print_content_for_r(content, offset * content_length_per_line, cont_lenght);
+                offset++;
+            }
+            current_offset = 0;
+        }
+        // pln("----------------------------");
+        close(fd);
+    }
+}
 
 // ############################################################################
-
-
-
 
 
 /**
@@ -581,6 +676,30 @@ void print_content(u_char *content, unsigned long offset)
     putc('\n', stdout);
 }
 
+void print_content_for_r(u_char *content, unsigned long int offset, int length){
+    printf("%.8lx ", offset);
+    for (int i = 0; i < content_length_per_line; i++)
+    {
+        if(i < length){
+            printf("%.2x ",  content[i]) ;
+        }
+        else{
+            printf("   ");
+        }
+    }
+    for (int i = 0; i < content_length_per_line; i++)
+    {
+        if(i < length){
+            printf("%c", isprint(content[i]) ? content[i] : '.');
+        }
+        else {
+            printf(" ") ;
+        }
+    }
+    putc('\n', stdout);
+}
+
+
 int get_dentry(char *disk_image, char *path, struct msdos_dir_entry *result)
 {
     // open file
@@ -608,7 +727,6 @@ int get_dentry(char *disk_image, char *path, struct msdos_dir_entry *result)
     close(file);
     return 1;
 }
-
 
 
 /*
