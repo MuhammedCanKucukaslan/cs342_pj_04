@@ -128,7 +128,26 @@ void print_r(char *disk_image, /*u_*/ char *path, int offset, int count);
  */
 void print_d(char *disk_image, char *path);
 
+/**
+ * 10. fat DISKIMAGE -f COUNT: print the content of the FAT table. The first
+ * COUNT entries will be printed out. Each line will include a cluster number
+ * (FAT index in decimal form) and the respective FAT entry content in
+ * decimal form. Entry index will start from 0 (that means cluster numbers
+ * will start from 0). If COUNT is -1, information about all entries will be
+ * printed out. An example output is shown below (for the first 15 entries).
+ * Use the same format. Command: ./fat disk1 -f 15
+ * 0000000: EOF
+ * 0000001: EOF
+ * 0000002: EOF
+ * 0000003: 4
+ * 0000004: 5
+ */
+void print_f(char *disk_image, int count);
+
+void print_n(char *disk_image, char *path) ;
+
 void print_h();
+
 
 
 

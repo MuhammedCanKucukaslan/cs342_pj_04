@@ -92,7 +92,7 @@ int main(int argc, char **argv)
     else if (strcmp(argv[2], "-n") == 0)
     {
         // printf("print -n %d of disk %s\n", atoi(argv[3]), argv[1]);
-        // print_n(argv[3]);
+        print_n(argv[1], argv[3]);
     }
     else if (strcmp(argv[2], "-m") == 0)
     {
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
     else if (strcmp(argv[2], "-f") == 0)
     {
         // printf("print -f %d of disk %s\n", atoi(argv[3]), argv[1]);
-        // print_f(argv[3]);
+        print_f(argv[1], atoi(argv[3]));
     }
     else if (strcmp(argv[2], "-d") == 0)
     {
@@ -565,7 +565,7 @@ void print_r(char *disk_image, char *path, int OFFSET, int COUNT)
                 memcpy(content, &buf[current_offset + offset * content_length_per_line], content_length_per_line);
 
                 content[content_length_per_line] = '\0';
-                //pln((char *)&content);
+                // pln((char *)&content);
                 print_content_for_r(content, offset * content_length_per_line, cont_lenght);
                 offset++;
             }
@@ -574,6 +574,55 @@ void print_r(char *disk_image, char *path, int OFFSET, int COUNT)
         // pln("----------------------------");
         close(fd);
     }
+}
+
+
+void print_f(char *disk_image, int count)
+{
+}
+
+void print_n(char *disk_image, char *path)
+{
+    toUpperCase(path);
+    struct msdos_dir_entry dep;
+
+    if (-1 == get_dentry(disk_image, path, &dep))
+    {
+        printf("The file \"%s\" could not be found!", path);
+    }
+
+    u_int fc = dep.start + (dep.starthi << 16);
+    int cc = 0;
+    printf("cindex=%d \tclusternum=%d\n", cc, fc); // 7
+
+    int file = open(disk_image, O_RDONLY);
+    if (file == -1)
+    {
+        pln("Error opening  disk");
+        return;
+    }
+
+
+    /**
+     * equal or bigger than 0x0FFFFFF8 indicates the end of a cluster chain (end
+     * of file) (EOC or EOF), for a file or directory. The value 0x0FFFFFF7 is bad
+     * cluster mark.
+     */
+    if (fc != 0)
+    {
+        while (fc < 0x0FFFFFF7)
+        {
+            fc = readFAT(file, fc);
+            cc++;
+            if (fc < 0x0FFFFFF7)
+            {
+                printf("cindex=%d \tclusternum=%d\n", cc, fc); // 7
+            }
+        };
+        // printf("cindex=%d \tclusternum=%d\n", cc,fc); // 7
+    }
+
+    close(file);
 }
 
 // ############################################################################
