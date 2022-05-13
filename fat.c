@@ -234,7 +234,8 @@ void print_m_helper(char *disk_image, char *path)
     {
         while (1)
         {
-            currCluster if ()
+            int currCluster;
+            if (currCluster >= 0) // if end then break
             {
                 break;
             }
