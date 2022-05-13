@@ -171,7 +171,6 @@ void print_l(char *disk_image, char *path)
                     trim_split_filename(dep->name, name, ext);
                     strcat(name, ".");
                     strcat(name, ext);
-                    trim_split_filename(dep->name, name, ext);
                     printf("(f) name=%-14s fcn=%6d size(bytes)=%8d date = %.2d-%.2d-%.4d time = %.2d:%.2d", name,
                            (dep->starthi << 16 | dep->start), dep->size, day, month, year + 1980, hours, mins);
                 }
@@ -236,8 +235,115 @@ void print_l(char *disk_image, char *path)
     }
     close(fd);
 }
+void print_t_helper(char *disk_image, char *path)
+{
+    pln("");
+    toUpperCase(path);
+    int fd = open(disk_image, O_SYNC | O_RDONLY);
+    if (fd == -1)
+    {
+        printf("Error opening disk %s for the fat's -a flag.\n", disk_image);
+        return; // terminate the method
+    }
+    struct msdos_dir_entry dep1;
+    struct msdos_dir_entry *dep;
+
+
+    u_int8_t cluster[CLUSTER_SIZE];
+    char pathdentry[100];
+    strcpy(pathdentry, path);
+    get_dentry(disk_image, pathdentry, &dep1);
+    dep = &dep1;
+    u_int cur_clu_no = dep->start + (dep->starthi << 16);
+    readcluster(fd, cluster, cur_clu_no);
+    dep = (struct msdos_dir_entry *)cluster;
+    for (int i = 0; i < CLUSTER_SIZE / 32; ++i)
+    {
+        if (dep->name[0] != 0xe5 && dep->name[0] != 0x00) // e5 and 00 is for empty
+        {
+            if (dep->attr == 0x10)
+            {
+                if (i < 2)
+                {
+                    printf("(d) name=%s/%-14s", path, dep->name);
+                }
+                else
+                {
+                    char name[MSDOS_NAME];
+                    char ext[MSDOS_NAME];
+                    trim_split_filename(dep->name, name, ext);
+                    char newpath[100];
+                    strcpy(newpath, path);
+                    strcat(newpath, "/");
+                    strcat(newpath, name);
+                    printf("(d) name=%s/%-14s", path, name);
+                    print_t_helper(disk_image, newpath);
+                    pln("");
+                }
+            }
+            if (dep->attr == 0x20)
+            {
+                char name[MSDOS_NAME];
+                char ext[MSDOS_NAME];
+                trim_split_filename(dep->name, name, ext);
+                strcat(name, ".");
+                strcat(name, ext);
+                printf("(f) name=%s/%-14s", path, name);
+            }
+            pln("");
+        }
+        ++dep;
+    }
+    close(fd);
+}
+
 void print_t(char *disk_image)
 {
+    char *path = "/";
+    toUpperCase(path);
+    int fd = open(disk_image, O_SYNC | O_RDONLY);
+    if (fd == -1)
+    {
+        printf("Error opening disk %s for the fat's -a flag.\n", disk_image);
+        return; // terminate the method
+    }
+    struct msdos_dir_entry dep1;
+    struct msdos_dir_entry *dep;
+
+    u_int8_t cluster[CLUSTER_SIZE];
+    readcluster(fd, cluster, 2);
+    dep = (struct msdos_dir_entry *)cluster;
+    for (int i = 0; i < CLUSTER_SIZE / 32; ++i)
+    {
+        if (dep->name[0] != 0xe5 && dep->name[0] != 0x00) // e5 and 00 is for empty
+        {
+            if (dep->attr == 0x10)
+            {
+                char name[MSDOS_NAME];
+                char ext[MSDOS_NAME];
+                trim_split_filename(dep->name, name, ext);
+                char newpath[100];
+                strcpy(newpath, path);
+                strcat(newpath, name);
+                printf("(d) name=%s%-14s", path, name);
+                print_t_helper(disk_image, newpath);
+            }
+            if (dep->attr == 0x20)
+            {
+                char name[MSDOS_NAME];
+                char ext[MSDOS_NAME];
+                trim_split_filename(dep->name, name, ext);
+                strcat(name, ".");
+                strcat(name, ext);
+                printf("(f) name=%s%-14s", path, name);
+                pln("");
+            }
+        }
+        ++dep;
+    }
+
+
+    close(fd);
 }
 
 /*
