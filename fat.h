@@ -26,6 +26,7 @@ static long days_in_year[] = {
 // method declaration
 void pln(char *input);
 
+
 /**
  * @brief  fat DISKIMAGE -v: print some summary information about the
  * specified FAT32 volume DISKIMAGE. Most of the information is obtained
@@ -183,6 +184,70 @@ void print_t(char *disk_image);
  */
 void print_l(char *disk_image, char *path);
 
+/**
+ * . fat DISKIMAGE -m COUNT: print a map of the volume. For each cluster,
+ * you need to print if that cluster is used or not, if used to which directory or
+ * file it belongs (full path will be printed out). The map of the first COUNT
+ * clusters will be printed out. If COUNT is -1, then information about all
+ * clusters will be printed out. Cluster numbers (FATtable indices) will be
+ * printed in decimal. An example output is shown below (for 50 clusters) .
+ * Use the same format. Command: ./fat disk1 -m 50
+ *
+ * 0000000: --EOF--
+ * 0000001: --EOF--
+ * 0000002: /
+ * 0000003: /FILE1.BIN
+ * 0000004: /FILE1.BIN
+ * 0000005: /FILE1.BIN
+ * 0000006: /FILE1.BIN
+ * 0000007: /FILE2.BIN
+ * 0000008: /FILE2.BIN
+ * 0000009: /FILE2.BIN
+ * 0000010: /FILE2.BIN
+ * 0000011: /FILE2.BIN
+ * 0000012: /FILE2.BIN
+ * 0000013: /FILE2.BIN
+ * 0000014: /FILE2.BIN
+ * 0000015: /FILE2.BIN
+ * 0000016: /FILE2.BIN
+ * 0000017: /FILE4.BIN
+ * 0000018: /FILE4.BIN
+ * 0000019: /FILE4.BIN
+ * 0000020: /FILE4.BIN
+ * 0000021: /FILE4.BIN
+ * 0000022: /FILE4.BIN
+ * 0000023: --FREE--
+ * 0000024: --FREE--
+ * 0000025: /FILE5.TXT
+ * 0000026: /FILE5.TXT
+ * 0000027: --FREE--
+ * 0000028: /DIR1
+ * 0000029: --FREE--
+ * 0000030: --FREE--
+ * 0000031: --FREE--
+ * 0000032: /DIR1/PROGRAM.C
+ * 0000033: /DIR2
+ * 0000034: --FREE--
+ * 0000035: --FREE--
+ * 0000036: --FREE--
+ * 0000037: --FREE--
+ * 0000038: /DIR2/F1.TXT
+ * 0000039: /DIR2/F1.TXT
+ * 0000040: /DIR2/F2.BIN
+ * 0000041: /DIR2/F2.BIN
+ * 0000042: /DIR2/F2.BIN
+ * 0000043: /DIR2/F2.BIN
+ * 0000044: /DIR2/F2.BIN
+ * 0000045: /DIR2/F2.BIN
+ * 0000046: /DIR2/F2.BIN
+ * 0000047: /DIR2/F2.BIN
+ * 0000048: /DIR2/F2.BIN
+ * 0000049: /DIR2/F2.BIN
+ * @param disk_image
+ * @param count
+ */
+void print_m(char *disk_image, int count);
+void print_m_helper(char *disk_image, char *path);
 
 void word_to_binary(unsigned long int num, char *binary);
 

@@ -19,6 +19,9 @@ const unsigned long content_length_per_line = 16;
 // # number of Xs in 1 MegaX, where MEGA_TO is X invariant
 #define MEGA_TO 1048576 // 1024*1024
 
+#define EOF "--EOF--"
+#define FRE "--FREE--"
+
 const char directory_seperator = '/';
 const int type_volume = 8;
 const int type_directory = 16;
@@ -35,6 +38,15 @@ unsigned char label[12];
 u_long number_of_clus;
 u_long used_cc;
 u_long free_cc;
+struct file_clus *file_list = NULL;
+struct file_clus *tail = NULL;
+struct file_clus
+{
+    char path[100];
+    char name[100];
+    uint startClus;
+    struct file_clus *next;
+};
 
 int main(int argc, char **argv)
 {
@@ -95,7 +107,7 @@ int main(int argc, char **argv)
     else if (strcmp(argv[2], "-m") == 0)
     {
         // printf("print -m %d of disk %s\n", atoi(argv[3]), argv[1]);
-        // print_m(argv[3]);
+        print_m(argv[1], atoi(argv[3]));
     }
     else if (strcmp(argv[2], "-f") == 0)
     {
@@ -112,11 +124,6 @@ int main(int argc, char **argv)
         // printf("print -l %d of disk %s\n", atoi(argv[3]), argv[1]);
         print_l(argv[1], argv[3]);
     }
-    else if (strcmp(argv[2], "-l") == 0)
-    {
-        // printf("print -l %d of disk %s\n", atoi(argv[3]), argv[1]);
-        // print_l(argv[3]);
-    }
     else if (strcmp(argv[2], "-h") == 0)
     {
         // printf("print -h %d of disk %s\n", atoi(argv[3]), argv[1]);
@@ -125,6 +132,205 @@ int main(int argc, char **argv)
 
     // pln("after if elses of the command flags!");
     return 0;
+}
+void print_m_helper(char *disk_image, char *path)
+{
+    toUpperCase(path);
+    int fd = open(disk_image, O_SYNC | O_RDONLY);
+    if (fd == -1)
+    {
+        printf("Error opening disk %s for the fat's -a flag.\n", disk_image);
+        return; // terminate the method
+    }
+    struct msdos_dir_entry dep1;
+    struct msdos_dir_entry *dep;
+
+
+    u_int8_t cluster[CLUSTER_SIZE];
+    char pathdentry[100];
+    strcpy(pathdentry, path);
+    get_dentry(disk_image, pathdentry, &dep1);
+    dep = &dep1;
+    u_int cur_clu_no = dep->start + (dep->starthi << 16);
+    readcluster(fd, cluster, cur_clu_no);
+    dep = (struct msdos_dir_entry *)cluster;
+    for (int i = 0; i < CLUSTER_SIZE / 32; ++i)
+    {
+        if (dep->name[0] != 0xe5 && dep->name[0] != 0x00) // e5 and 00 is for empty
+        {
+            if (dep->attr == 0x10)
+            {
+                if (i < 2)
+                {
+                }
+                else
+                {
+                    char name[MSDOS_NAME];
+                    char ext[MSDOS_NAME];
+                    trim_split_filename(dep->name, name, ext);
+                    char newpath[100];
+                    strcpy(newpath, path);
+                    strcat(newpath, "/");
+                    strcat(newpath, name);
+                    if (file_list == NULL)
+                    {
+                        struct file_clus *curr = malloc(sizeof(struct file_clus));
+                        curr->startClus = dep->start | (dep->starthi << 16);
+                        strcpy(curr->name, name);
+                        strcpy(curr->path, path);
+                        tail = curr;
+                        file_list = tail;
+                    }
+                    else
+                    {
+                        struct file_clus *curr = malloc(sizeof(struct file_clus));
+                        curr->startClus = dep->start | (dep->starthi << 16);
+                        strcpy(curr->name, name);
+                        strcpy(curr->path, path);
+                        tail->next = curr;
+                        tail = tail->next;
+                    }
+
+
+                    // printf("(d) name=%s/%-14s", path, name);
+                    print_m_helper(disk_image, newpath);
+                    pln("");
+                }
+            }
+            if (dep->attr == 0x20)
+            {
+                char name[MSDOS_NAME];
+                char ext[MSDOS_NAME];
+                trim_split_filename(dep->name, name, ext);
+                strcat(name, ".");
+                strcat(name, ext);
+                if (file_list == NULL)
+                {
+                    struct file_clus *curr = malloc(sizeof(struct file_clus));
+                    curr->next = NULL;
+                    curr->startClus = dep->start | (dep->starthi << 16);
+                    strcpy(curr->name, name);
+                    strcpy(curr->path, path);
+                    tail = curr;
+                    file_list = tail;
+                }
+                else
+                {
+                    struct file_clus *curr = malloc(sizeof(struct file_clus));
+                    curr->next = NULL;
+                    curr->startClus = dep->start | (dep->starthi << 16);
+                    strcpy(curr->name, name);
+                    strcpy(curr->path, path);
+                    tail->next = curr;
+                    tail = tail->next;
+                }
+                // printf("(f) name=%s/%-14s", path, name);
+            }
+        }
+        ++dep;
+    }
+    struct file_clus *curr = file_list;
+    while (curr != NULL)
+    {
+        while (1)
+        {
+            currCluster if ()
+            {
+                break;
+            }
+        }
+        curr = curr->next;
+    }
+
+    close(fd);
+}
+
+void print_m(char *disk_image, int count)
+{
+    char *path = "/";
+    toUpperCase(path);
+    int fd = open(disk_image, O_SYNC | O_RDONLY);
+    if (fd == -1)
+    {
+        printf("Error opening disk %s for the fat's -a flag.\n", disk_image);
+        return; // terminate the method
+    }
+    struct msdos_dir_entry dep1;
+    struct msdos_dir_entry *dep;
+
+    u_int8_t cluster[CLUSTER_SIZE];
+    readcluster(fd, cluster, 2);
+    dep = (struct msdos_dir_entry *)cluster;
+    for (int i = 0; i < CLUSTER_SIZE / 32; ++i)
+    {
+        if (dep->name[0] != 0xe5 && dep->name[0] != 0x00) // e5 and 00 is for empty
+        {
+            if (dep->attr == 0x10)
+            {
+                char name[MSDOS_NAME];
+                char ext[MSDOS_NAME];
+                trim_split_filename(dep->name, name, ext);
+                char newpath[100];
+                strcpy(newpath, path);
+                strcat(newpath, name);
+                if (file_list == NULL)
+                {
+                    struct file_clus *curr = malloc(sizeof(struct file_clus));
+                    curr->next = NULL;
+                    curr->startClus = dep->start | (dep->starthi << 16);
+                    strcpy(curr->name, name);
+                    strcpy(curr->path, path);
+                    tail = curr;
+                    file_list = tail;
+                }
+                else
+                {
+                    struct file_clus *curr = malloc(sizeof(struct file_clus));
+                    curr->next = NULL;
+                    curr->startClus = dep->start | (dep->starthi << 16);
+                    strcpy(curr->name, name);
+                    strcpy(curr->path, path);
+                    tail->next = curr;
+                    tail = tail->next;
+                }
+                // printf("(d) name=%s%-14s", path, name);
+                print_m_helper(disk_image, newpath);
+            }
+            if (dep->attr == 0x20)
+            {
+                char name[MSDOS_NAME];
+                char ext[MSDOS_NAME];
+                trim_split_filename(dep->name, name, ext);
+                strcat(name, ".");
+                strcat(name, ext);
+                if (file_list == NULL)
+                {
+                    struct file_clus *curr = malloc(sizeof(struct file_clus));
+                    curr->next = NULL;
+                    curr->startClus = dep->start | (dep->starthi << 16);
+                    strcpy(curr->name, name);
+                    strcpy(curr->path, path);
+                    tail = curr;
+                    file_list = tail;
+                }
+                else
+                {
+                    struct file_clus *curr = malloc(sizeof(struct file_clus));
+                    curr->next = NULL;
+                    curr->startClus = dep->start | (dep->starthi << 16);
+                    strcpy(curr->name, name);
+                    strcpy(curr->path, path);
+                    tail->next = curr;
+                    tail = tail->next;
+                }
+                // printf("(f) name=%s%-14s", path, name);
+            }
+        }
+        ++dep;
+    }
+
+
+    close(fd);
 }
 void print_l(char *disk_image, char *path)
 {

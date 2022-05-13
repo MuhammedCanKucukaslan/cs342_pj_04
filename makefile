@@ -28,7 +28,9 @@ a: fat
 n: fat
 	./fat disk1 -n /DIR1/AFILE1.BIN
 m: fat
-	./fat disk1 -m 100
+	./fat disk1 -m -1
+m2: fat
+	./fat disk1 -m 50
 f: fat
 	./fat disk1 -f 50
 d: fat
