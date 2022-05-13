@@ -112,6 +112,19 @@ void print_a(char *disk_image, /*unsigned*/ char *path);
 void print_b(char *disk_image, /*u_*/ char *path);
 
 /**
+ * 11. fat DISKIMAGE -r PATH OFFSET COUNT: read COUNT bytes from the
+ * file indicated with PATH starting at OFFSET (byte offset into the file) and
+ * print the bytes read to the screen as shown in the example below, which
+ * shows the output for 200 bytes from the file starting at offset 14 of the file
+ * (the first byte of a file has offset 0). Use the same format. If OFFSET +
+ * COUNT is greater that the filesize, just read till the end of the file and print
+ * the respective content. Command: ./fat disk1 -r /FILE5.TXT 14 200
+ * @param disk_image
+ * @param path
+ */
+void print_r(char *disk_image, /*u_*/ char *path, int offset, int count);
+
+/**
  * 9. fat DISKIMAGE -d PATH: print the content of the directory entry of the
  * file or directory indicated with PATH. Some information from the directory
  * entry will be printed out. An example output is shown below. Use the
@@ -183,6 +196,25 @@ void print_t(char *disk_image);
  */
 void print_l(char *disk_image, char *path);
 
+ /** 10. fat DISKIMAGE -f COUNT: print the content of the FAT table. The first
+ * COUNT entries will be printed out. Each line will include a cluster number
+ * (FAT index in decimal form) and the respective FAT entry content in
+ * decimal form. Entry index will start from 0 (that means cluster numbers
+ * will start from 0). If COUNT is -1, information about all entries will be
+ * printed out. An example output is shown below (for the first 15 entries).
+ * Use the same format. Command: ./fat disk1 -f 15
+ * 0000000: EOF
+ * 0000001: EOF
+ * 0000002: EOF
+ * 0000003: 4
+ * 0000004: 5
+ */
+void print_f(char *disk_image, int count);
+
+void print_n(char *disk_image, char *path) ;
+
+void print_h();
+
 
 void word_to_binary(unsigned long int num, char *binary);
 
@@ -194,6 +226,7 @@ int readcluster(int fd, unsigned char *buf,
                 unsigned int cnum); // given in assignment
 unsigned long int u8_to_ul(__u8 *arr, int length);
 void print_content(u_char *content, unsigned long int offset);
+void print_content_for_r(u_char *content, unsigned long int offset, int length);
 
 int get_dentry(char *disk_image, char *path, struct msdos_dir_entry *result);
 void trim_split_filename(const char *full_8_3_filename, char *filename, char *extension);
