@@ -47,6 +47,17 @@ struct file_clus
     uint startClus;
     struct file_clus *next;
 };
+enum fstate
+{
+    FREE,
+    EEOF,
+    OK
+};
+struct mapPrint
+{
+    enum fstate state;
+    char print[100];
+};
 
 int main(int argc, char **argv)
 {
@@ -197,7 +208,6 @@ void print_m_helper(char *disk_image, char *path)
 
                     // printf("(d) name=%s/%-14s", path, name);
                     print_m_helper(disk_image, newpath);
-                    pln("");
                 }
             }
             if (dep->attr == 0x20)
@@ -231,19 +241,6 @@ void print_m_helper(char *disk_image, char *path)
             }
         }
         ++dep;
-    }
-    struct file_clus *curr = file_list;
-    while (curr != NULL)
-    {
-        while (1)
-        {
-            int currCluster;
-            if (currCluster >= 0) // if end then break
-            {
-                break;
-            }
-        }
-        curr = curr->next;
     }
 
     close(fd);
@@ -332,7 +329,211 @@ void print_m(char *disk_image, int count)
         }
         ++dep;
     }
+    if (count > 0)
+    {
+        struct mapPrint *map = (struct mapPrint *)mmap(NULL, count * sizeof(struct mapPrint), PROT_READ | PROT_WRITE,
+                                                       MAP_ANON | MAP_SHARED, -1, 0);
+        for (int i = 0; i < count; ++i)
+        {
+            struct mapPrint map_print;
+            map_print.state = FREE;
+            map[i] = map_print;
+        }
+        {
+            u_int fc = 2;
+            if (fc != 0)
+            {
+                struct mapPrint map_print;
+                map_print.state = OK;
+                strcpy(map_print.print, "/");
+                if (fc < count)
+                {
+                    map[fc] = map_print;
+                }
+                while (fc < 0x0FFFFFF7 && fc < count)
+                {
+                    fc = readFAT(fd, fc);
 
+                    if (fc < 0x0FFFFFF7)
+                    {
+                        map_print.state = OK;
+                        strcpy(map_print.print, "/");
+                        map[fc] = map_print;
+                    }
+                };
+                // printf("cindex=%d \tclusternum=%d\n", cc,fc); // 7
+            }
+        }
+        struct file_clus *curr = file_list;
+        while (curr != NULL)
+        {
+            u_int fc = curr->startClus;
+            if (fc != 0)
+            {
+                struct mapPrint map_print;
+                map_print.state = OK;
+                strcpy(map_print.print, "");
+                strcat(map_print.print, curr->path);
+                if (strcmp(curr->path, "/") != 0)
+                {
+                    strcat(map_print.print, "/");
+                }
+                strcat(map_print.print, curr->name);
+                if (fc < count)
+                {
+                    map[fc] = map_print;
+                }
+                while (fc < 0x0FFFFFF7 && fc < count)
+                {
+                    fc = readFAT(fd, fc);
+
+                    if (fc < 0x0FFFFFF7)
+                    {
+                        map_print.state = OK;
+                        strcpy(map_print.print, "");
+                        strcat(map_print.print, curr->path);
+                        if (strcmp(curr->path, "/") != 0)
+                        {
+                            strcat(map_print.print, "/");
+                        }
+                        strcat(map_print.print, curr->name);
+                        map[fc] = map_print;
+                    }
+                };
+                // printf("cindex=%d \tclusternum=%d\n", cc,fc); // 7
+            }
+            curr = curr->next;
+        }
+        printf("%7d: %s", 0, "--EOF--");
+        pln("");
+        printf("%7d: %s", 1, "--EOF--");
+        pln("");
+        for (int i = 2; i < count; ++i)
+        {
+            if (map[i].state == OK)
+            {
+                printf("%7d: %s", i, map[i].print);
+                pln("");
+            }
+            else
+            {
+                printf("%7d: %s", i, "--FREE--");
+                pln("");
+            }
+        }
+        munmap(map, count * sizeof(struct mapPrint));
+
+        struct file_clus *currF = file_list;
+        while (currF != NULL)
+        {
+            struct file_clus *prev = currF;
+            currF = currF->next;
+            free(prev);
+        }
+    }
+    else if (count == -1)
+    {
+        count = number_of_clus;
+        struct mapPrint *map = (struct mapPrint *)mmap(NULL, count * sizeof(struct mapPrint), PROT_READ | PROT_WRITE,
+                                                       MAP_ANON | MAP_SHARED, -1, 0);
+        for (int i = 0; i < count; ++i)
+        {
+            struct mapPrint map_print;
+            map_print.state = FREE;
+            map[i] = map_print;
+        }
+        {
+            u_int fc = 2;
+            if (fc != 0)
+            {
+                struct mapPrint map_print;
+                map_print.state = OK;
+                strcpy(map_print.print, "/");
+                if (fc < count)
+                {
+                    map[fc] = map_print;
+                }
+                while (fc < 0x0FFFFFF7 && fc < count)
+                {
+                    fc = readFAT(fd, fc);
+
+                    if (fc < 0x0FFFFFF7)
+                    {
+                        map_print.state = OK;
+                        strcpy(map_print.print, "/");
+                        map[fc] = map_print;
+                    }
+                };
+                // printf("cindex=%d \tclusternum=%d\n", cc,fc); // 7
+            }
+        }
+        struct file_clus *curr = file_list;
+        while (curr != NULL)
+        {
+            u_int fc = curr->startClus;
+            if (fc != 0)
+            {
+                struct mapPrint map_print;
+                map_print.state = OK;
+                strcpy(map_print.print, "");
+                strcat(map_print.print, curr->path);
+                if (strcmp(curr->path, "/") != 0)
+                {
+                    strcat(map_print.print, "/");
+                }
+                strcat(map_print.print, curr->name);
+                if (fc < count)
+                {
+                    map[fc] = map_print;
+                }
+                while (fc < 0x0FFFFFF7 && fc < count)
+                {
+                    fc = readFAT(fd, fc);
+
+                    if (fc < 0x0FFFFFF7)
+                    {
+                        map_print.state = OK;
+                        strcpy(map_print.print, "");
+                        strcat(map_print.print, curr->path);
+                        if (strcmp(curr->path, "/") != 0)
+                        {
+                            strcat(map_print.print, "/");
+                        }
+                        strcat(map_print.print, curr->name);
+                        map[fc] = map_print;
+                    }
+                };
+                // printf("cindex=%d \tclusternum=%d\n", cc,fc); // 7
+            }
+            curr = curr->next;
+        }
+        printf("%7d: %s", 0, "--EOF--");
+        pln("");
+        printf("%7d: %s", 1, "--EOF--");
+        pln("");
+        for (int i = 2; i < count; ++i)
+        {
+            if (map[i].state == OK)
+            {
+                printf("%7d: %s", i, map[i].print);
+                pln("");
+            }
+            else
+            {
+                printf("%7d: %s", i, "--FREE--");
+                pln("");
+            }
+        }
+        munmap(map, count * sizeof(struct mapPrint));
+
+        struct file_clus *currF = file_list;
+        while (currF != NULL)
+        {
+            struct file_clus *prev = currF;
+            currF = currF->next;
+            free(prev);
+        }
+    }
 
     close(fd);
 }
