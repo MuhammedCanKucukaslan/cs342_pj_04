@@ -11,8 +11,21 @@
 #ifndef FAT
 #define FAT
 
+#define SECS_PER_MIN 60
+#define SECS_PER_HOUR (60 * 60)
+#define SECS_PER_DAY (SECS_PER_HOUR * 24)
+/* days between 1.1.70 and 1.1.80 (2 leap days) */
+#define DAYS_DELTA (365 * 10 + 2)
+/* 120 (2100 - 1980) isn't leap year */
+#define YEAR_2100 120
+#define IS_LEAP_YEAR(y) (!((y)&3) && (y) != YEAR_2100)
+static long days_in_year[] = {
+    /* Jan  Feb  Mar  Apr  May  Jun  Jul  Aug  Sep  Oct  Nov  Dec */
+    0, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 0, 0, 0,
+};
 // method declaration
 void pln(char *input);
+
 
 /**
  * @brief  fat DISKIMAGE -v: print some summary information about the
@@ -129,7 +142,127 @@ void print_r(char *disk_image, /*u_*/ char *path, int offset, int count);
 void print_d(char *disk_image, char *path);
 
 /**
- * 10. fat DISKIMAGE -f COUNT: print the content of the FAT table. The first
+ * fat DISKIMAGE -t: print all directories and their files and
+ * subdirectories starting from the root directory, recursively, in a depth-first
+ * search order. That means you will traverse the whole directory tree and
+ * print the names of the files and directories encountered. An example
+ * output is shown below. Use the same format. Each line gives the full
+ * pathname of a file or directory. Whether the pathname is for a file or
+ * directory is indicated with (f) or (d) in the beginning of the line.
+ * Command: ./fat disk1 -t
+ *
+ * (f) /FILE1.BIN
+ * (f) /FILE2.BIN
+ * (f) /FILE3.BIN
+ * (f) /FILE4.BIN
+ * (f) /FILE5.TXT
+ * (d) /DIR2
+ * (d) /DIR2/.
+ * (d) /DIR2/..
+ * (f) /DIR2/F2.BIN
+ * (f) /DIR2/F1.TXT
+ * (d) /DIR1
+ * (d) /DIR1/.
+ * (d) /DIR1/..
+ * (f) /DIR1/PROGRAM.C
+ * (f) /DIR1/AFILE1.BIN
+ * (d) /DIR1/DD1
+ * (d) /DIR1/DD1/.
+ * (d) /DIR1/DD1/..
+ * (f) /DIR1/DD1/PFILE.BIN
+ * (f) /DIR1/DD1/PF1.TXT
+ * (f) /DIR1/DD1/PFILE2.BIN
+ *
+ */
+void print_t(char *disk_image);
+
+/**
+ * fat DISKIMAGE -l PATH: print the names of the files and
+ * subdirectories in the directory indicated with PATH. The pathname for the
+ * root directory is “/”. In each line of output, print the name of a file or
+ * directory (not pathname), its first cluster number, its size (in bytes), and
+ * its date-time information. You will get the date and time information from
+ * offset 22 (4 bytes) of a directory entry (or from the date, time field of the
+ * msdos_dir_entry structure explained later). An example output is
+ * shown below. Use the same format. Command: ./fat disk1 -l /DIR1
+ *
+ * (d) name=.            fcn=28  size(bytes)=0       date=09-04-2022:10:38
+ * (d) name=..           fcn=0   size(bytes)=0       date=09-04-2022:10:38
+ * (f) name=PROGRAM.C    fcn=32  size(bytes)=102     date=09-04-2022:10:40
+ * (f) name=AFILE1.BIN   fcn=60  size(bytes)=51200   date=09-04-2022:10:48
+ * (d) name=DD1          fcn=110 size(bytes)=0        date=10-04-2022:13:18
+ *
+ * @param disk_image
+ * @param path
+ */
+void print_l(char *disk_image, char *path);
+
+/**
+ * . fat DISKIMAGE -m COUNT: print a map of the volume. For each cluster,
+ * you need to print if that cluster is used or not, if used to which directory or
+ * file it belongs (full path will be printed out). The map of the first COUNT
+ * clusters will be printed out. If COUNT is -1, then information about all
+ * clusters will be printed out. Cluster numbers (FATtable indices) will be
+ * printed in decimal. An example output is shown below (for 50 clusters) .
+ * Use the same format. Command: ./fat disk1 -m 50
+ *
+ * 0000000: --EOF--
+ * 0000001: --EOF--
+ * 0000002: /
+ * 0000003: /FILE1.BIN
+ * 0000004: /FILE1.BIN
+ * 0000005: /FILE1.BIN
+ * 0000006: /FILE1.BIN
+ * 0000007: /FILE2.BIN
+ * 0000008: /FILE2.BIN
+ * 0000009: /FILE2.BIN
+ * 0000010: /FILE2.BIN
+ * 0000011: /FILE2.BIN
+ * 0000012: /FILE2.BIN
+ * 0000013: /FILE2.BIN
+ * 0000014: /FILE2.BIN
+ * 0000015: /FILE2.BIN
+ * 0000016: /FILE2.BIN
+ * 0000017: /FILE4.BIN
+ * 0000018: /FILE4.BIN
+ * 0000019: /FILE4.BIN
+ * 0000020: /FILE4.BIN
+ * 0000021: /FILE4.BIN
+ * 0000022: /FILE4.BIN
+ * 0000023: --FREE--
+ * 0000024: --FREE--
+ * 0000025: /FILE5.TXT
+ * 0000026: /FILE5.TXT
+ * 0000027: --FREE--
+ * 0000028: /DIR1
+ * 0000029: --FREE--
+ * 0000030: --FREE--
+ * 0000031: --FREE--
+ * 0000032: /DIR1/PROGRAM.C
+ * 0000033: /DIR2
+ * 0000034: --FREE--
+ * 0000035: --FREE--
+ * 0000036: --FREE--
+ * 0000037: --FREE--
+ * 0000038: /DIR2/F1.TXT
+ * 0000039: /DIR2/F1.TXT
+ * 0000040: /DIR2/F2.BIN
+ * 0000041: /DIR2/F2.BIN
+ * 0000042: /DIR2/F2.BIN
+ * 0000043: /DIR2/F2.BIN
+ * 0000044: /DIR2/F2.BIN
+ * 0000045: /DIR2/F2.BIN
+ * 0000046: /DIR2/F2.BIN
+ * 0000047: /DIR2/F2.BIN
+ * 0000048: /DIR2/F2.BIN
+ * 0000049: /DIR2/F2.BIN
+ * @param disk_image
+ * @param count
+ */
+void print_m(char *disk_image, int count);
+void print_m_helper(char *disk_image, char *path);
+
+ /** 10. fat DISKIMAGE -f COUNT: print the content of the FAT table. The first
  * COUNT entries will be printed out. Each line will include a cluster number
  * (FAT index in decimal form) and the respective FAT entry content in
  * decimal form. Entry index will start from 0 (that means cluster numbers
@@ -147,8 +280,6 @@ void print_f(char *disk_image, int count);
 void print_n(char *disk_image, char *path) ;
 
 void print_h();
-
-
 
 
 void word_to_binary(unsigned long int num, char *binary);
